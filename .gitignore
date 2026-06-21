@@ -1,0 +1,14 @@
+# Ignore React app dependencies
+sb-admin-react/node_modules/
+
+# Build output
+sb-admin-react/dist/
+
+# Tooling caches
+sb-admin-react/.vite/
+
+# Logs
+sb-admin-react/npm-debug.log*
+sb-admin-react/yarn-debug.log*
+sb-admin-react/yarn-error.log*
+sb-admin-react/pnpm-debug.log*
