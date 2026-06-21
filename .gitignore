@@ -12,3 +12,6 @@ sb-admin-react/npm-debug.log*
 sb-admin-react/yarn-debug.log*
 sb-admin-react/yarn-error.log*
 sb-admin-react/pnpm-debug.log*
+
+# Local environment files
+sb-admin-react/.env.local

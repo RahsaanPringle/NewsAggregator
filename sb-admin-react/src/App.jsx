@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import DashboardContent from './components/DashboardContent'
 import Footer from './components/Footer'
 import Overlays from './components/Overlays'
@@ -11,6 +11,8 @@ const coreScripts = [
   '/vendor/jquery-easing/jquery.easing.min.js',
   '/js/sb-admin-2.min.js',
   '/vendor/chart.js/Chart.min.js',
+  '/vendor/datatables/jquery.dataTables.min.js',
+  '/vendor/datatables/dataTables.bootstrap4.min.js',
 ]
 
 const pageScripts = [
@@ -84,8 +86,11 @@ function destroyExistingCharts() {
 }
 
 function App() {
+  const [scriptsReady, setScriptsReady] = useState(false)
+
   useEffect(() => {
     document.body.id = 'page-top'
+    setScriptsReady(false)
 
     let cancelled = false
     const loadScripts = async () => {
@@ -101,6 +106,8 @@ function App() {
       if (cancelled) {
         return
       }
+
+      setScriptsReady(true)
 
       // React re-renders can replace canvas nodes, so clear previous Chart instances first.
       destroyExistingCharts()
@@ -130,7 +137,7 @@ function App() {
         <div id="content-wrapper" className="d-flex flex-column">
           <div id="content">
             <Topbar />
-            <DashboardContent />
+            <DashboardContent scriptsReady={scriptsReady} />
           </div>
 
           <Footer />

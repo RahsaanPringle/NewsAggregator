@@ -1,11 +1,11 @@
 import DashboardRows from './DashboardRows'
 import PageHeading from './PageHeading'
 
-function DashboardContent() {
+function DashboardContent({ scriptsReady }) {
   return (
     <div className="container-fluid">
       <PageHeading />
-      <DashboardRows />
+      <DashboardRows scriptsReady={scriptsReady} />
     </div>
   )
 }
