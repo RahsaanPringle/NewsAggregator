@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-const RAPID_API_HOST = 'real-time-news-data.p.rapidapi.com'
 const DEFAULT_COLUMNS = ['Headline', 'Source', 'Published', 'Authors']
 
 function formatPublishedDate(value) {
@@ -19,8 +18,16 @@ function formatPublishedDate(value) {
   }).format(parsedDate)
 }
 
-function buildQueryString(queryParams = {}) {
-  const searchParams = new URLSearchParams()
+function normalizeArticles(payload) {
+  if (Array.isArray(payload?.data)) {
+    return payload.data
+  }
+
+  return payload?.data?.top_news?.all_articles ?? payload?.data?.all_articles ?? []
+}
+
+function buildLocalApiUrl(endpointPath, queryParams = {}) {
+  const searchParams = new URLSearchParams({ endpointPath })
 
   Object.entries(queryParams).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
@@ -28,11 +35,7 @@ function buildQueryString(queryParams = {}) {
     }
   })
 
-  return searchParams.toString()
-}
-
-function normalizeArticles(payload) {
-  return payload?.data?.top_news?.all_articles ?? payload?.data?.all_articles ?? []
+  return `/api/news?${searchParams.toString()}`
 }
 
 function NewsDataTable({
@@ -51,22 +54,14 @@ function NewsDataTable({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const apiKey = import.meta.env.VITE_RAPIDAPI_KEY
   const requestUrl = useMemo(() => {
-    const queryString = buildQueryString(queryParams)
-    return `https://real-time-news-data.p.rapidapi.com${endpointPath}${queryString ? `?${queryString}` : ''}`
+    return buildLocalApiUrl(endpointPath, queryParams)
   }, [endpointPath, queryParams])
 
   useEffect(() => {
     const abortController = new AbortController()
 
     async function loadNews() {
-      if (!apiKey) {
-        setError('Missing RapidAPI key. Set VITE_RAPIDAPI_KEY in sb-admin-react/.env.local.')
-        setLoading(false)
-        return
-      }
-
       setLoading(true)
       setError('')
 
@@ -75,8 +70,6 @@ function NewsDataTable({
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'x-rapidapi-host': RAPID_API_HOST,
-            'x-rapidapi-key': apiKey,
           },
           signal: abortController.signal,
         })
@@ -103,7 +96,7 @@ function NewsDataTable({
     return () => {
       abortController.abort()
     }
-  }, [apiKey, errorLabel, requestUrl])
+  }, [errorLabel, requestUrl])
 
   useEffect(() => {
     const tableElement = tableRef.current
