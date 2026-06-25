@@ -1,0 +1,23 @@
+{
+  "name": "news-api",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Node + Express API for NewsAggregator MySQL persistence and Swagger docs.",
+  "main": "src/server.cjs",
+  "scripts": {
+    "dev": "nodemon src/server.cjs",
+    "start": "node src/server.cjs",
+    "check": "node --check src/server.cjs"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "mysql2": "^3.22.5",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}

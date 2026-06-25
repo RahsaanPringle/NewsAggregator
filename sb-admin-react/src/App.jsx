@@ -15,10 +15,7 @@ const coreScripts = [
   '/vendor/datatables/dataTables.bootstrap4.min.js',
 ]
 
-const pageScripts = [
-  '/js/demo/chart-area-demo.js',
-  '/js/demo/chart-pie-demo.js',
-]
+const pageScripts = []
 
 function loadScriptOnce(src) {
   return new Promise((resolve, reject) => {
@@ -90,7 +87,6 @@ function App() {
 
   useEffect(() => {
     document.body.id = 'page-top'
-    setScriptsReady(false)
 
     let cancelled = false
     const loadScripts = async () => {

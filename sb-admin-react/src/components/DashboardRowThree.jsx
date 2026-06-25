@@ -8,12 +8,15 @@ function DashboardRowThree({ scriptsReady }) {
     <div className="row">
       <div className="col-lg-12 mb-4">
         <DashboardRowThreeNewsCoverage scriptsReady={scriptsReady} />
-        <DashboardThemeColorCards />
       </div>
 
       <div className="col-lg-12 mb-4">
         <DashboardRowThreeWorldHeadlines scriptsReady={scriptsReady} />
+      </div>
+
+      <div className="col-lg-12 mb-4">
         <DashboardRowThreeDevelopmentApproach />
+        <DashboardThemeColorCards />
       </div>
     </div>
   )

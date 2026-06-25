@@ -20,6 +20,45 @@ Set one of these before starting the local cache server:
 
 Your existing `.env.local` file can still hold `VITE_RAPIDAPI_KEY` for local development.
 
+To enable MySQL article sync, also set:
+
+- `VITE_NEWS_API_BASE_URL` (optional)
+	- Set to `http://localhost:4001` for local standalone API development.
+	- Set to `https://NewsAPI.YubTub.club` for production.
+	- Leave empty to use same-origin routes.
+
+- `MYSQL_HOST`
+- `MYSQL_PORT` (defaults to `3306`)
+- `MYSQL_DATABASE`
+- `MYSQL_USER`
+- `MYSQL_PASSWORD`
+
+You can copy `.env.local.example` to `.env.local` and fill in your values.
+
+If you are using the standalone `news-api` project, the frontend only needs `VITE_NEWS_API_BASE_URL` for MySQL sync calls. In that setup, MySQL credentials belong in the API project's `.env.local`, not the frontend.
+
+## MySQL Setup
+
+1. Install a MySQL manager tool (pick one):
+	 - MySQL Workbench
+	 - DBeaver
+	 - HeidiSQL
+	 - phpMyAdmin (if your host already provides it)
+2. Connect using your host credentials.
+3. Run `server/sql/create_news_articles_table.sql` against your database.
+4. Start the app with `npm run dev`.
+
+The local cache server also auto-creates `news_articles` on first MySQL request, but running the SQL script explicitly is recommended.
+
+## MySQL Sync API
+
+- `POST /api/mysql/articles/status`
+	- Request body: `{ "articles": [ ... ] }`
+	- Response includes `existingArticleHashes` so the UI can hide add buttons for records already saved.
+- `POST /api/mysql/articles`
+	- Request body: `{ "article": { ... }, "endpointPath": "/topic-headlines", "queryParams": { ... } }`
+	- Inserts the article into MySQL if it does not already exist.
+
 ## Scripts
 
 - `npm run dev` starts both the Vite frontend and the local JSON Server cache API.

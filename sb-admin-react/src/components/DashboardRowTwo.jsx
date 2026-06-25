@@ -1,11 +1,11 @@
-import DashboardRowTwoEarningsOverview from './DashboardRowTwoEarningsOverview'
-import DashboardRowTwoRevenueSources from './DashboardRowTwoRevenueSources'
+import DashboardRowTwoNewsVolumeOverview from './DashboardRowTwoNewsVolumeOverview'
+import DashboardRowTwoNewsSourceDistribution from './DashboardRowTwoNewsSourceDistribution'
 
-function DashboardRowTwo() {
+function DashboardRowTwo({ scriptsReady }) {
   return (
     <div className="row">
-      <DashboardRowTwoEarningsOverview />
-      <DashboardRowTwoRevenueSources />
+      <DashboardRowTwoNewsVolumeOverview scriptsReady={scriptsReady} />
+      <DashboardRowTwoNewsSourceDistribution scriptsReady={scriptsReady} />
     </div>
   )
 }

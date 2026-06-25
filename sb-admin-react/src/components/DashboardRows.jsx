@@ -5,9 +5,9 @@ import DashboardRowThree from './DashboardRowThree'
 function DashboardRows({ scriptsReady }) {
   return (
     <>
-      <DashboardRowOne />
-      <DashboardRowTwo />
       <DashboardRowThree scriptsReady={scriptsReady} />
+      <DashboardRowOne />
+      <DashboardRowTwo scriptsReady={scriptsReady} />
     </>
   )
 }

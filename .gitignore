@@ -1,8 +1,10 @@
 # Ignore React app dependencies
 sb-admin-react/node_modules/
+news-api/node_modules/
 
 # Build output
 sb-admin-react/dist/
+news-api/dist/
 
 # Tooling caches
 sb-admin-react/.vite/
@@ -12,6 +14,11 @@ sb-admin-react/npm-debug.log*
 sb-admin-react/yarn-debug.log*
 sb-admin-react/yarn-error.log*
 sb-admin-react/pnpm-debug.log*
+news-api/npm-debug.log*
+news-api/yarn-debug.log*
+news-api/yarn-error.log*
+news-api/pnpm-debug.log*
 
 # Local environment files
 sb-admin-react/.env.local
+news-api/.env.local
