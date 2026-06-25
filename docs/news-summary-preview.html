@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Daily News Summary Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #08111f;
+      --bg-2: #0f1c33;
+      --panel: rgba(10, 18, 33, 0.82);
+      --panel-soft: rgba(18, 31, 56, 0.92);
+      --line: rgba(255, 255, 255, 0.10);
+      --text: #f5f7fb;
+      --muted: #a8b3c7;
+      --brand: #7dd3fc;
+      --brand-2: #fbbf24;
+      --brand-3: #34d399;
+      --danger: #fb7185;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, rgba(125, 211, 252, 0.18), transparent 34%),
+        radial-gradient(circle at top right, rgba(251, 191, 36, 0.16), transparent 28%),
+        linear-gradient(180deg, var(--bg), var(--bg-2));
+      color: var(--text);
+      font-family: "Manrope", system-ui, sans-serif;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.7), transparent 95%);
+      pointer-events: none;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page {
+      width: min(1200px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      font-size: 0.84rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--brand-3);
+      box-shadow: 0 0 0 6px rgba(52, 211, 153, 0.12);
+    }
+
+    .hero {
+      margin-top: 18px;
+      padding: 32px;
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -120px -100px auto;
+      width: 360px;
+      height: 360px;
+      background: radial-gradient(circle, rgba(125, 211, 252, 0.18), transparent 68%);
+      pointer-events: none;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    h1, h2, h3 {
+      font-family: "Space Grotesk", sans-serif;
+      margin: 0;
+      letter-spacing: -0.03em;
+    }
+
+    h1 {
+      font-size: clamp(2.2rem, 4vw, 4.6rem);
+      line-height: 0.94;
+      margin-top: 14px;
+    }
+
+    .lede {
+      margin: 18px 0 24px;
+      max-width: 62ch;
+      color: #d7def0;
+      font-size: 1.05rem;
+      line-height: 1.7;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      text-decoration: none;
+      font-weight: 700;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+      border-color: rgba(255, 255, 255, 0.24);
+    }
+
+    .button.primary {
+      background: linear-gradient(135deg, rgba(125, 211, 252, 0.96), rgba(59, 130, 246, 0.88));
+      color: #07111d;
+      border-color: transparent;
+    }
+
+    .button.secondary {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .stat-card, .panel, .story-card {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 16px 42px rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(16px);
+    }
+
+    .stat-card {
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .stat-value {
+      display: block;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 2rem;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .summary-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      border-radius: 24px;
+      padding: 22px;
+      background: var(--panel-soft);
+    }
+
+    .summary-panel header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .summary-panel .date {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .summary-copy {
+      color: #e3e8f5;
+      line-height: 1.75;
+      font-size: 1.02rem;
+      margin: 0;
+    }
+
+    .topics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .topic {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--line);
+      color: #eaf2ff;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    .topic strong {
+      font-size: 0.85rem;
+      color: var(--brand);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 22px;
+      align-items: start;
+    }
+
+    .domain-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      margin-top: 22px;
+    }
+
+    .panel {
+      border-radius: 22px;
+      padding: 20px;
+    }
+
+    .panel h2 {
+      font-size: 1.3rem;
+      margin-bottom: 14px;
+    }
+
+    .panel p {
+      color: var(--muted);
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .card-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .card-kicker {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.05);
+      color: #dfe7fa;
+      font-size: 0.76rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    .domain-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .domain-item {
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .domain-item h3 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+
+    .domain-item p {
+      font-size: 0.94rem;
+    }
+
+    .mini-list {
+      display: grid;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .mini-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      color: #dfe7fa;
+      line-height: 1.55;
+      font-size: 0.92rem;
+    }
+
+    .mini-item .bullet {
+      color: var(--brand);
+      font-weight: 800;
+      flex: none;
+    }
+
+    .when-note {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(251, 191, 36, 0.20);
+      background: rgba(251, 191, 36, 0.08);
+      color: #ffe9a4;
+      line-height: 1.6;
+      font-size: 0.92rem;
+    }
+
+    .story-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .story-card {
+      border-radius: 20px;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .story-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    .story-meta .source {
+      color: #d8e2f8;
+      font-weight: 700;
+    }
+
+    .story-card h3 {
+      font-size: 1.04rem;
+      line-height: 1.35;
+    }
+
+    .story-card p {
+      color: #c6d0e6;
+      line-height: 1.7;
+      margin: 0;
+    }
+
+    .story-card footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(52, 211, 153, 0.12);
+      color: #9ef0c9;
+      border: 1px solid rgba(52, 211, 153, 0.22);
+      font-size: 0.82rem;
+      white-space: nowrap;
+    }
+
+    .tag.alt {
+      background: rgba(251, 191, 36, 0.12);
+      color: #ffe08a;
+      border-color: rgba(251, 191, 36, 0.20);
+    }
+
+    .footnote {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .footer {
+      margin-top: 18px;
+      padding: 18px 4px 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .grid,
+      .domain-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-stats {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        width: min(100% - 20px, 1200px);
+        padding-top: 14px;
+      }
+
+      .hero,
+      .panel {
+        padding: 18px;
+        border-radius: 20px;
+      }
+
+      h1 {
+        font-size: 2.15rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="eyebrow"><span class="dot"></span> Standalone concept preview</div>
+
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <h1>Daily Summary API preview, built from the current cache</h1>
+          <p class="lede">
+            This mock page shows what a simple “summary” view could look like if it reviewed all available sources for a single day and then surfaced the biggest storylines with the relevant articles attached.
+          </p>
+
+          <div class="hero-actions">
+            <a class="button primary" href="#stories">View linked stories</a>
+            <a class="button secondary" href="#method">How the summary is derived</a>
+          </div>
+
+          <div class="hero-stats" id="stats"></div>
+        </div>
+
+        <aside class="summary-panel">
+          <header>
+            <div>
+              <div class="eyebrow" style="padding: 6px 12px; font-size: 0.75rem; margin: 0 0 12px;">Summary output</div>
+              <h2>What the page would tell a reader</h2>
+            </div>
+            <div class="date">June 23, 2026 cache</div>
+          </header>
+
+          <p class="summary-copy" id="summary-copy">
+            Europe’s heatwave dominates the day, with reporting focused on deadly temperatures in France and the wider climate cost. A second theme is geopolitical friction: Russia’s fuel pressure, Ukraine strikes in Crimea, and renewed questions around regional security. Political stories round out the slate, from Trump’s standing abroad to Brexit’s longer-term economic effects.
+          </p>
+
+          <div class="topics" id="topics"></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="grid" id="method">
+      <div class="panel">
+        <h2>Why this works with the current data</h2>
+        <p>
+          The cache already includes article titles, snippets, source names, publication timestamps, and links. That is enough to build a useful first-pass summary page without adding any live API wiring or app integration.
+        </p>
+        <p style="margin-top: 12px;">
+          For a real endpoint later, this page could be backed by a small daily aggregation service that clusters related headlines, extracts top themes, and returns a digest plus source links.
+        </p>
+        <div class="footnote">
+          This version is intentionally static and separate from the React apps.
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="card-title-row">
+          <div>
+            <h2>When</h2>
+            <p>Already covered for the current dataset.</p>
+          </div>
+          <span class="card-kicker">Done for now</span>
+        </div>
+        <div class="domain-item">
+          <h3>Timeframe snapshot</h3>
+          <p>
+            The current cache is anchored on June 23, 2026, with a small amount of adjacent coverage on June 22 and a follow-up fetch on June 24.
+          </p>
+        </div>
+        <div class="when-note">
+          This makes the time-based summary intentionally narrow, so the next useful step is to focus on Who, What, and Where until the dataset grows.
+        </div>
+      </div>
+    </section>
+
+    <section class="domain-grid" aria-label="Targeted domain summaries">
+      <article class="panel">
+        <div class="card-title-row">
+          <div>
+            <h2>Who</h2>
+            <p>Key actors, institutions, and decision-makers driving the coverage.</p>
+          </div>
+          <span class="card-kicker">People & institutions</span>
+        </div>
+        <div class="domain-list">
+          <div class="domain-item">
+            <h3>Governments under pressure</h3>
+            <p>France, Russia, Libya, Ukraine, and the UK appear repeatedly as the main policy actors in the day’s coverage.</p>
+          </div>
+          <div class="domain-item">
+            <h3>Named leaders and negotiators</h3>
+            <p>Trump, Putin, Edi Rama, Andy Burnham, and Taliban/EU delegates surface in stories about elections, diplomacy, and public standing.</p>
+          </div>
+          <div class="domain-item">
+            <h3>Institutions shaping the story</h3>
+            <p>The U.N., Reuters, BBC, AP, and regional media are driving the record for this date, especially around conflict and politics.</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="card-title-row">
+          <div>
+            <h2>What</h2>
+            <p>The main events and patterns that connect the articles.</p>
+          </div>
+          <span class="card-kicker">Themes</span>
+        </div>
+        <div class="domain-list">
+          <div class="domain-item">
+            <h3>Climate and heat stress</h3>
+            <p>Europe’s heatwave is the clearest top-line story, with France’s conditions and the broader climate implications dominating the feed.</p>
+          </div>
+          <div class="domain-item">
+            <h3>Conflict, security, and energy</h3>
+            <p>Russia, Ukraine, Crimea, Belarus, and fuel disruption form the second major cluster, blending military pressure with economic fallout.</p>
+          </div>
+          <div class="domain-item">
+            <h3>Politics, migration, and public order</h3>
+            <p>Domestic politics, cross-border migration, and local violence round out the day, from Labour leadership to Montreal and Brussels.</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="panel">
+        <div class="card-title-row">
+          <div>
+            <h2>Where</h2>
+            <p>Geographies that show up across the current records.</p>
+          </div>
+          <span class="card-kicker">Places</span>
+        </div>
+        <div class="domain-list">
+          <div class="domain-item">
+            <h3>Europe-wide focus</h3>
+            <p>France, the UK, Brussels, and wider Europe anchor most of the political and climate headlines.</p>
+          </div>
+          <div class="domain-item">
+            <h3>Conflict corridors</h3>
+            <p>Ukraine, Crimea, Belarus, Russia, and the Gaza / Israel theatre dominate the security reporting.</p>
+          </div>
+          <div class="domain-item">
+            <h3>Secondary spots</h3>
+            <p>Libya, Montreal, Albania, Moldova, and the Strait of Hormuz show up as important but smaller story locations.</p>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="grid" style="margin-top: 22px;">
+      <div class="panel" id="stories">
+        <div class="card-title-row">
+          <div>
+            <h2>Relevant articles from the cache</h2>
+            <p>Representative links used to support the summary above.</p>
+          </div>
+          <span class="card-kicker">Source links</span>
+        </div>
+        <div class="story-list" id="story-list"></div>
+      </div>
+    </section>
+
+    <div class="footer">
+      Demo source: cached headlines from 2026-06-23 in <a href="../sb-admin-react/server/db.json">sb-admin-react/server/db.json</a>. Open this file directly in a browser to view the standalone concept.
+    </div>
+  </main>
+
+  <script>
+    const stories = [
+      {
+        source: 'Al Jazeera',
+        title: 'France records hottest-ever day as 40 drown trying to escape heatwave',
+        snippet: 'At least 40 people have drowned in France while swimming in unsupervised areas to seek relief from a heatwave gripping the country and other parts of Europe.',
+        link: 'https://www.aljazeera.com/news/2026/6/23/about-20-drown-in-france-trying-to-escape-heatwave-sweeping-much-of-europe',
+        tag: 'Climate',
+        tone: 'alt'
+      },
+      {
+        source: 'Reuters',
+        title: 'Russia eyes diesel export ban, fuel imports amid Ukrainian strikes; Crimea restricts public life',
+        snippet: 'Russia weighs diesel exports, fuel imports, and subsidies to cap prices as strikes continue to disrupt the energy picture.',
+        link: 'https://www.reuters.com/business/energy/russia-discusses-importing-fuel-amid-ukrainian-strikes-newspaper-says-2026-06-23/',
+        tag: 'Energy',
+        tone: ''
+      },
+      {
+        source: 'Axios',
+        title: "Trump's America faces global side-eye",
+        snippet: 'The U.S. is losing standing abroad as foreign policy choices deepen doubts about whether America can still be counted on.',
+        link: 'https://www.axios.com/2026/06/23/trump-foreign-policy-reliability-pew-poll',
+        tag: 'Politics',
+        tone: 'alt'
+      },
+      {
+        source: 'BBC',
+        title: "Ten years on, Brexit's economic impact is becoming clearer",
+        snippet: 'A decade ago, economists argued the UK would sustain longer-term economic damage by leaving the EU. The latest reporting revisits the outcome.',
+        link: 'https://www.bbc.com/news/articles/cyv0m164m84o',
+        tag: 'Economy',
+        tone: ''
+      },
+      {
+        source: 'DW.com',
+        title: 'Ukraine says major Crimea bridge destroyed in latest attack',
+        snippet: 'The Ukrainian military said it struck a vital railway bridge over the North Crimean canal in Russian-occupied Crimea.',
+        link: 'https://www.dw.com/en/ukraine-says-major-crimea-bridge-destroyed-in-latest-attack/a-77678698',
+        tag: 'War',
+        tone: 'alt'
+      },
+      {
+        source: 'AP News',
+        title: 'Afghan Taliban hold first, closed-door talks with EU on deportations',
+        snippet: 'A Taliban delegation met in Brussels with European Union staff for closed-door talks focusing on deportations.',
+        link: 'https://apnews.com/article/afghan-taliban-brussels-eu-deportations-migration-f5053fa8c915bf19d0f483ac55fea86e',
+        tag: 'Migration',
+        tone: ''
+      },
+      {
+        source: 'The New York Times',
+        title: 'U.N. Report Says Israeli Killings of Gaza Children Post-Truce Amount to Genocide',
+        snippet: 'A U.N. report released on Tuesday accused Israeli security forces of abuse and deliberate killings of Palestinian children months after the truce.',
+        link: 'https://www.nytimes.com/2026/06/23/world/middleeast/un-report-israel-palestinian-children.html',
+        tag: 'Middle East',
+        tone: 'alt'
+      },
+      {
+        source: 'Reuters',
+        title: 'Libya\'s eastern government bans entry of nationals from four African countries',
+        snippet: 'Citizens of Sudan, Eritrea, Ethiopia, and Somalia are prohibited from entering Libyan territory through all land, sea, and air ports.',
+        link: 'https://www.reuters.com/world/africa/libyas-eastern-government-bans-entry-nationals-four-african-countries-2026-06-23/',
+        tag: 'Africa',
+        tone: ''
+      },
+      {
+        source: 'NPR',
+        title: 'Gunman kills an officer at a Montreal hotel before being shot dead, police say',
+        snippet: 'Police say a suspect armed with a long gun opened fire at a Montreal hotel, killing a police officer before officers returned fire.',
+        link: 'https://www.npr.org/2026/06/23/g-s1-129576/montreal-officer-killed',
+        tag: 'Public safety',
+        tone: 'alt'
+      }
+    ];
+
+    const headlineTopics = [
+      { label: 'Europe heatwave', count: 4, accent: 'Weather' },
+      { label: 'Russia / Ukraine', count: 3, accent: 'Security' },
+      { label: 'Politics & polls', count: 2, accent: 'Governance' }
+    ];
+
+    const stats = [
+      { value: '10', label: 'linked articles in the preview' },
+      { value: '8', label: 'distinct publishers represented' },
+      { value: '3', label: 'dominant story clusters' }
+    ];
+
+    const statsRoot = document.getElementById('stats');
+    const topicsRoot = document.getElementById('topics');
+    const storiesRoot = document.getElementById('story-list');
+
+    statsRoot.innerHTML = stats.map((item) => `
+      <article class="stat-card">
+        <span class="stat-value">${item.value}</span>
+        <span class="stat-label">${item.label}</span>
+      </article>
+    `).join('');
+
+    topicsRoot.innerHTML = headlineTopics.map((item) => `
+      <span class="topic"><strong>${item.accent}</strong> ${item.label} · ${item.count} stories</span>
+    `).join('');
+
+    storiesRoot.innerHTML = stories.map((story) => `
+      <article class="story-card">
+        <div class="story-meta">
+          <span class="source">${story.source}</span>
+          <span class="tag ${story.tone}">${story.tag}</span>
+        </div>
+        <h3>${story.title}</h3>
+        <p>${story.snippet}</p>
+        <footer>
+          <span style="color: var(--muted); font-size: 0.88rem;">Used as a relevant link in the summary.</span>
+          <a class="button secondary" href="${story.link}" target="_blank" rel="noreferrer">Read article</a>
+        </footer>
+      </article>
+    `).join('');
+  </script>
+</body>
+</html>
