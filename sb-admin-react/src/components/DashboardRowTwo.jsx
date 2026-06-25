@@ -4,8 +4,10 @@ import DashboardRowTwoNewsSourceDistribution from './DashboardRowTwoNewsSourceDi
 function DashboardRowTwo({ scriptsReady }) {
   return (
     <div className="row">
-      <DashboardRowTwoNewsVolumeOverview scriptsReady={scriptsReady} />
       <DashboardRowTwoNewsSourceDistribution scriptsReady={scriptsReady} />
+      <DashboardRowTwoNewsVolumeOverview scriptsReady={scriptsReady} />
+      
+      
     </div>
   )
 }

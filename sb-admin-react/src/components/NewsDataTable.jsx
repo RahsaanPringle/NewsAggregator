@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { openNewsPopup } from '../utils/openNewsPopup'
 
 const DEFAULT_COLUMNS = ['Headline', 'Source', 'Published', 'Authors']
 const MYSQL_API_BASE_URL = String(import.meta.env.VITE_NEWS_API_BASE_URL || '').trim().replace(/\/+$/, '')
@@ -249,7 +250,14 @@ function NewsDataTable({
         return (
           <tr key={article.article_id || `${article.title}-${index}`}>
             <td>
-              <a href={article.link} target="_blank" rel="noreferrer">
+              <a
+                href={article.link}
+                onClick={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  openNewsPopup(article.link)
+                }}
+              >
                 {article.title}
               </a>
               <div className="small text-gray-500">{article.snippet}</div>
