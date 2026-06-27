@@ -3,7 +3,7 @@ const openApiSpec = {
   info: {
     title: 'News API',
     version: '0.1.0',
-    description: 'Standalone MySQL API for saving and inspecting news articles.',
+    description: 'Standalone MySQL API for saving articles and storing lightweight article comments.',
   },
   servers: [
     {
@@ -14,6 +14,7 @@ const openApiSpec = {
   tags: [
     { name: 'System' },
     { name: 'Articles' },
+    { name: 'Comments' },
     { name: 'MySQL Sync' },
   ],
   paths: {
@@ -147,6 +148,66 @@ const openApiSpec = {
         },
       },
     },
+    '/api/articles/{articleHash}/comments': {
+      get: {
+        tags: ['Comments'],
+        summary: 'List published comments for one saved article',
+        parameters: [
+          {
+            name: 'articleHash',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Comment list for one article',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ArticleCommentListResponse' },
+              },
+            },
+          },
+          404: {
+            description: 'Article not found',
+          },
+        },
+      },
+      post: {
+        tags: ['Comments'],
+        summary: 'Create a top-level comment for one saved article',
+        parameters: [
+          {
+            name: 'articleHash',
+            in: 'path',
+            required: true,
+            schema: { type: 'string' },
+          },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/CreateCommentRequest' },
+            },
+          },
+        },
+        responses: {
+          201: {
+            description: 'Created comment',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/ArticleCommentRecord' },
+              },
+            },
+          },
+          404: {
+            description: 'Article not found',
+          },
+        },
+      },
+    },
     '/openapi.json': {
       get: {
         tags: ['System'],
@@ -261,6 +322,132 @@ const openApiSpec = {
           limit: { type: 'integer' },
           offset: { type: 'integer' },
           total: { type: 'integer' },
+        },
+      },
+      CommentConsentInput: {
+        type: 'object',
+        properties: {
+          ipAddress: { type: 'boolean' },
+          location: { type: 'boolean' },
+        },
+      },
+      CommentLocationInput: {
+        type: 'object',
+        properties: {
+          city: { type: 'string' },
+          state: { type: 'string' },
+          country: { type: 'string' },
+          postcode: { type: 'string' },
+          latitude: { type: 'number' },
+          longitude: { type: 'number' },
+        },
+      },
+      CreateCommentRequest: {
+        type: 'object',
+        required: ['body'],
+        properties: {
+          body: { type: 'string' },
+          consent: { $ref: '#/components/schemas/CommentConsentInput' },
+          location: { $ref: '#/components/schemas/CommentLocationInput' },
+        },
+      },
+      CommentUserProfile: {
+        type: 'object',
+        properties: {
+          gender: { type: 'string', nullable: true },
+          name: {
+            type: 'object',
+            properties: {
+              title: { type: 'string', nullable: true },
+              first: { type: 'string', nullable: true },
+              last: { type: 'string', nullable: true },
+            },
+          },
+          location: {
+            type: 'object',
+            properties: {
+              city: { type: 'string', nullable: true },
+              state: { type: 'string', nullable: true },
+              country: { type: 'string', nullable: true },
+              postcode: { type: 'string', nullable: true },
+              coordinates: {
+                type: 'object',
+                properties: {
+                  latitude: { type: 'string', nullable: true },
+                  longitude: { type: 'string', nullable: true },
+                },
+              },
+              timezone: {
+                type: 'object',
+                properties: {
+                  offset: { type: 'string', nullable: true },
+                  description: { type: 'string', nullable: true },
+                },
+              },
+            },
+          },
+          email: { type: 'string', nullable: true },
+          login: {
+            type: 'object',
+            properties: {
+              uuid: { type: 'string', nullable: true },
+              username: { type: 'string', nullable: true },
+            },
+          },
+          dob: {
+            type: 'object',
+            properties: {
+              date: { type: 'string', nullable: true },
+              age: { type: 'integer', nullable: true },
+            },
+          },
+          registered: {
+            type: 'object',
+            properties: {
+              date: { type: 'string', nullable: true },
+              age: { type: 'integer', nullable: true },
+            },
+          },
+          phone: { type: 'string', nullable: true },
+          cell: { type: 'string', nullable: true },
+          picture: {
+            type: 'object',
+            properties: {
+              thumbnail: { type: 'string', nullable: true },
+            },
+          },
+          nat: { type: 'string', nullable: true },
+        },
+      },
+      CommentUserRecord: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer' },
+          display_name: { type: 'string' },
+          username: { type: 'string', nullable: true },
+          profile: { $ref: '#/components/schemas/CommentUserProfile' },
+          profile_thumbnail_data_url: { type: 'string', nullable: true },
+        },
+      },
+      ArticleCommentRecord: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer' },
+          body: { type: 'string' },
+          status: { type: 'string' },
+          created_at: { type: 'string' },
+          updated_at: { type: 'string' },
+          user: { $ref: '#/components/schemas/CommentUserRecord' },
+        },
+      },
+      ArticleCommentListResponse: {
+        type: 'object',
+        properties: {
+          article_hash: { type: 'string' },
+          items: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/ArticleCommentRecord' },
+          },
         },
       },
     },
