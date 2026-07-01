@@ -393,9 +393,29 @@ function NewsDataTable({
                   {previewComments.length ? (
                     <div className="mt-1">
                       {previewComments.map((comment) => (
-                        <div className="small text-gray-700 mb-1" key={comment.id}>
-                          <span className="font-weight-bold">{comment.user?.display_name || 'Guest Commenter'}:</span>{' '}
-                          {comment.body}
+                        <div className="small text-gray-700 mb-1 d-flex justify-content-between align-items-start" key={comment.id}>
+                          <div className="pr-2">
+                            <span className="font-weight-bold">{comment.user?.display_name || 'Guest Commenter'}:</span>{' '}
+                            {comment.body}
+                          </div>
+                          {comment.id ? (
+                            <button
+                              type="button"
+                              className="btn btn-link btn-sm p-0"
+                              onClick={(event) => {
+                                event.preventDefault()
+                                event.stopPropagation()
+                                setSelectedCommentArticle({
+                                  articleHash,
+                                  articleTitle: article.title || articleHash,
+                                  startComposerOpen: false,
+                                  replyCommentId: comment.id,
+                                })
+                              }}
+                            >
+                              Reply
+                            </button>
+                          ) : null}
                         </div>
                       ))}
                     </div>
@@ -502,6 +522,7 @@ function NewsDataTable({
           articleHash={selectedCommentArticle.articleHash}
           articleTitle={selectedCommentArticle.articleTitle}
           startComposerOpen={selectedCommentArticle.startComposerOpen}
+          initialReplyCommentId={selectedCommentArticle.replyCommentId ?? null}
           onCommentCreated={(createdComment) => handleCommentCreated(selectedCommentArticle.articleHash, createdComment)}
           onClose={() => setSelectedCommentArticle(null)}
         />

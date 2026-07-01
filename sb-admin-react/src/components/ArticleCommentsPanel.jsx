@@ -78,7 +78,14 @@ function getCurrentLocation() {
   })
 }
 
-function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startComposerOpen = false, onCommentCreated }) {
+function ArticleCommentsPanel({
+  articleHash,
+  articleTitle,
+  onClose,
+  startComposerOpen = false,
+  initialReplyCommentId = null,
+  onCommentCreated,
+}) {
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -135,6 +142,23 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
     setShowComposer(startComposerOpen)
     setReplyTarget(null)
   }, [articleHash, startComposerOpen])
+
+  useEffect(() => {
+    if (!initialReplyCommentId) {
+      return
+    }
+
+    const targetComment = comments.find((comment) => comment.id === initialReplyCommentId)
+    if (!targetComment || replyTarget?.id === targetComment.id) {
+      return
+    }
+
+    setSubmitError('')
+    setLocationStatus('')
+    setBody('')
+    setShowComposer(false)
+    setReplyTarget(targetComment)
+  }, [comments, initialReplyCommentId, replyTarget?.id])
 
   const threadedComments = buildCommentThread(comments)
 
