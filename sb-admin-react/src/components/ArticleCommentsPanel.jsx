@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import CommentComposerForm from './CommentComposerForm'
+import { setCurrentCommentUserId } from '../utils/commentUserSession'
 
 const MYSQL_API_BASE_URL = String(import.meta.env.VITE_NEWS_API_BASE_URL || '').trim().replace(/\/+$/, '')
 
@@ -206,6 +207,7 @@ function ArticleCommentsPanel({
       }
 
       const createdComment = await response.json()
+      setCurrentCommentUserId(createdComment?.user?.id)
       setComments((previousState) => [...previousState, createdComment])
       onCommentCreated?.(createdComment)
       setBody('')
