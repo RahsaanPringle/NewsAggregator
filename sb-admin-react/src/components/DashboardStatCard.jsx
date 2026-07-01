@@ -1,4 +1,4 @@
-function DashboardStatCard({ borderClass, titleClass, title, value, iconClass, progressPercent }) {
+function DashboardStatCard({ borderClass, titleClass, title, value, iconClass, progressPercent, helpText }) {
   return (
     <div className="col-xl-3 col-md-6 mb-4">
       <div className={`card ${borderClass} shadow h-100 py-2`}>
@@ -27,6 +27,7 @@ function DashboardStatCard({ borderClass, titleClass, title, value, iconClass, p
               ) : (
                 <div className="h5 mb-0 font-weight-bold text-gray-800">{value}</div>
               )}
+              {helpText ? <div className="small text-gray-500 mt-2">{helpText}</div> : null}
             </div>
             <div className="col-auto">
               <i className={`${iconClass} fa-2x text-gray-300`}></i>
