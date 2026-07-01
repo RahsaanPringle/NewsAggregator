@@ -133,9 +133,9 @@ function Sidebar() {
         </li>
 
         <li className="nav-item">
-          <a className="nav-link" href="tables.html">
+          <a className="nav-link" href="https://github.com/RahsaanPringle/NewsAggregator" target="Repo">
             <i className="fas fa-fw fa-table"></i>
-            <span>Tables</span>
+            <span>Repo</span>
           </a>
         </li>
 
