@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import CommentComposerForm from './CommentComposerForm'
 
 const MYSQL_API_BASE_URL = String(import.meta.env.VITE_NEWS_API_BASE_URL || '').trim().replace(/\/+$/, '')
 
@@ -210,95 +211,37 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
           <div className="small text-gray-500">
             {loading ? 'Loading comments…' : `${comments.length} comment${comments.length === 1 ? '' : 's'}`}
           </div>
-          {!showComposer && !replyTarget ? (
-            <button
-              type="button"
-              className="btn btn-success btn-sm"
-              onClick={() => {
-                setSubmitError('')
-                setLocationStatus('')
-                setReplyTarget(null)
-                setBody('')
-                setShowComposer(true)
-              }}
-            >
-              Add Comment
-            </button>
-          ) : null}
+          <CommentComposerForm
+            isOpen={showComposer && !replyTarget}
+            onOpen={() => {
+              setSubmitError('')
+              setLocationStatus('')
+              setReplyTarget(null)
+              setBody('')
+              setShowComposer(true)
+            }}
+            onBodyChange={setBody}
+            onConsentIpAddressChange={setConsentIpAddress}
+            onConsentLocationChange={setConsentLocation}
+            onSubmit={handleSubmit}
+            onCancel={() => {
+              setShowComposer(false)
+              setSubmitError('')
+              setLocationStatus('')
+              setBody('')
+            }}
+            textareaId="article-comment-body"
+            label="Add a comment"
+            placeholder="Write a quick note about the article..."
+            body={body}
+            submitting={submitting}
+            consentIpAddress={consentIpAddress}
+            consentLocation={consentLocation}
+            locationStatus={locationStatus}
+            submitError={submitError}
+            submitButtonLabel="Post Comment"
+          />
         </div>
-
-        {showComposer && !replyTarget ? (
-          <form onSubmit={handleSubmit} className="mb-4">
-            <div className="form-group">
-              <label htmlFor="article-comment-body" className="small text-gray-700 font-weight-bold">
-                Add a comment
-              </label>
-              <textarea
-                id="article-comment-body"
-                className="form-control"
-                rows="3"
-                value={body}
-                onChange={(event) => setBody(event.target.value)}
-                placeholder="Write a quick note about the article..."
-                disabled={submitting}
-              />
-            </div>
-
-            <div className="form-check mb-2">
-              <input
-                id="comment-consent-ip"
-                className="form-check-input"
-                type="checkbox"
-                checked={consentIpAddress}
-                onChange={(event) => setConsentIpAddress(event.target.checked)}
-                disabled={submitting}
-              />
-              <label className="form-check-label small" htmlFor="comment-consent-ip">
-                Use my IP address as a return identifier for this profile.
-              </label>
-            </div>
-
-            <div className="form-check mb-3">
-              <input
-                id="comment-consent-location"
-                className="form-check-input"
-                type="checkbox"
-                checked={consentLocation}
-                onChange={(event) => setConsentLocation(event.target.checked)}
-                disabled={submitting}
-              />
-              <label className="form-check-label small" htmlFor="comment-consent-location">
-                Try to include my current browser location too.
-              </label>
-            </div>
-
-            {locationStatus ? <div className="small text-gray-500 mb-3">{locationStatus}</div> : null}
-            {submitError ? (
-              <div className="alert alert-warning" role="alert">
-                {submitError}
-              </div>
-            ) : null}
-
-            <div className="d-flex align-items-center">
-              <button type="submit" className="btn btn-success btn-sm mr-2" disabled={submitting || !body.trim()}>
-                {submitting ? 'Posting…' : 'Post Comment'}
-              </button>
-              <button
-                type="button"
-                className="btn btn-outline-secondary btn-sm"
-                disabled={submitting}
-                onClick={() => {
-                  setShowComposer(false)
-                  setSubmitError('')
-                  setLocationStatus('')
-                  setBody('')
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : null}
 
         {error ? (
           <div className="alert alert-warning mb-0" role="alert">
@@ -350,76 +293,31 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
                 <p className="mb-0 text-gray-800">{comment.body}</p>
 
                 {replyTarget?.id === comment.id ? (
-                  <form onSubmit={handleSubmit} className="mt-3 pt-3 border-top">
-                    <div className="form-group">
-                      <label htmlFor={`reply-comment-body-${comment.id}`} className="small text-gray-700 font-weight-bold">
-                        Reply to {comment.user?.display_name || 'commenter'}
-                      </label>
-                      <textarea
-                        id={`reply-comment-body-${comment.id}`}
-                        className="form-control"
-                        rows="3"
-                        value={body}
-                        onChange={(event) => setBody(event.target.value)}
-                        placeholder="Write a reply..."
-                        disabled={submitting}
-                      />
-                    </div>
-
-                    <div className="form-check mb-2">
-                      <input
-                        id={`reply-consent-ip-${comment.id}`}
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={consentIpAddress}
-                        onChange={(event) => setConsentIpAddress(event.target.checked)}
-                        disabled={submitting}
-                      />
-                      <label className="form-check-label small" htmlFor={`reply-consent-ip-${comment.id}`}>
-                        Use my IP address as a return identifier for this profile.
-                      </label>
-                    </div>
-
-                    <div className="form-check mb-3">
-                      <input
-                        id={`reply-consent-location-${comment.id}`}
-                        className="form-check-input"
-                        type="checkbox"
-                        checked={consentLocation}
-                        onChange={(event) => setConsentLocation(event.target.checked)}
-                        disabled={submitting}
-                      />
-                      <label className="form-check-label small" htmlFor={`reply-consent-location-${comment.id}`}>
-                        Try to include my current browser location too.
-                      </label>
-                    </div>
-
-                    {locationStatus ? <div className="small text-gray-500 mb-3">{locationStatus}</div> : null}
-                    {submitError ? (
-                      <div className="alert alert-warning" role="alert">
-                        {submitError}
-                      </div>
-                    ) : null}
-
-                    <div className="d-flex align-items-center">
-                      <button type="submit" className="btn btn-success btn-sm mr-2" disabled={submitting || !body.trim()}>
-                        {submitting ? 'Posting…' : 'Post Reply'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-outline-secondary btn-sm"
-                        disabled={submitting}
-                        onClick={() => {
-                          setReplyTarget(null)
-                          setSubmitError('')
-                          setLocationStatus('')
-                          setBody('')
-                        }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
+                  <CommentComposerForm
+                    isOpen
+                    showTrigger={false}
+                    formClassName="mt-3 pt-3 border-top"
+                    onBodyChange={setBody}
+                    onConsentIpAddressChange={setConsentIpAddress}
+                    onConsentLocationChange={setConsentLocation}
+                    onSubmit={handleSubmit}
+                    onCancel={() => {
+                      setReplyTarget(null)
+                      setSubmitError('')
+                      setLocationStatus('')
+                      setBody('')
+                    }}
+                    textareaId={`reply-comment-body-${comment.id}`}
+                    label={`Reply to ${comment.user?.display_name || 'commenter'}`}
+                    placeholder="Write a reply..."
+                    body={body}
+                    submitting={submitting}
+                    consentIpAddress={consentIpAddress}
+                    consentLocation={consentLocation}
+                    locationStatus={locationStatus}
+                    submitError={submitError}
+                    submitButtonLabel="Post Reply"
+                  />
                 ) : null}
               </article>
             ))}

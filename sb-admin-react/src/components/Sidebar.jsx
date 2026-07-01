@@ -126,9 +126,9 @@ function Sidebar() {
         </li>
 
         <li className="nav-item">
-          <a className="nav-link" href="charts.html">
+          <a className="nav-link" href="https://github.com/users/RahsaanPringle/projects/1/views/1?system_template=kanban">
             <i className="fas fa-fw fa-chart-area"></i>
-            <span>Charts</span>
+            <span>BackLog</span>
           </a>
         </li>
 

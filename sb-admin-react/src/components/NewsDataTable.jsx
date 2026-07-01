@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ArticleCommentsPanel from './ArticleCommentsPanel'
+import AddCommentButton from './AddCommentButton'
 import { openNewsPopup } from '../utils/openNewsPopup'
 
 const DEFAULT_COLUMNS = ['Headline', 'Source', 'Published', 'Authors']
@@ -421,14 +422,13 @@ function NewsDataTable({
               ) : isSaved && articleHash ? (
                 <div className="btn-group btn-group-sm" role="group" aria-label="Saved article actions">
                   <span className="btn btn-sm btn-outline-success disabled">Saved</span>
-                  <button
-                    type="button"
+                  <AddCommentButton
                     className="btn btn-sm btn-outline-success"
                     data-news-action="comment"
                     data-row-index={index}
                   >
                     Add Comment
-                  </button>
+                  </AddCommentButton>
                 </div>
               ) : statusLoading ? (
                 <span className="small text-gray-500">Checking…</span>
