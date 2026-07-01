@@ -1,4 +1,5 @@
 import ArticleCommentsPanel from './ArticleCommentsPanel'
+import AddCommentButton from './AddCommentButton'
 
 function SavedArticleCommentSection({
   articleHash,
@@ -16,8 +17,7 @@ function SavedArticleCommentSection({
     <div className="mb-3">
       <div className="btn-group btn-group-sm mb-2" role="group" aria-label="Saved article actions">
         <span className="btn btn-sm btn-outline-success disabled">Saved</span>
-        <button
-          type="button"
+        <AddCommentButton
           className="btn btn-sm btn-outline-success"
           onClick={() => {
             onOpenComment({
@@ -28,7 +28,7 @@ function SavedArticleCommentSection({
           }}
         >
           Add Comment
-        </button>
+        </AddCommentButton>
       </div>
       <div className="small text-success font-weight-bold">
         {articleComments.length ? `${articleComments.length} comment${articleComments.length === 1 ? '' : 's'}` : 'No comments yet'}
