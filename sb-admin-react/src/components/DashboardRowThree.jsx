@@ -1,5 +1,6 @@
-import DashboardRowThreeNewsCoverage from './DashboardRowThreeNewsCoverage'
 import DashboardRowThreeWorldHeadlinesCards from './DashboardRowThreeWorldHeadlinesCards'
+import DashboardRowThreeNewsCoverageCards from './DashboardRowThreeNewsCoverageCards'
+import DashboardRowThreeBusinessNewsCards from './DashboardRowThreeBusinessNewsCards'
 
 function DashboardRowThree({ scriptsReady }) {
   return (
@@ -8,10 +9,11 @@ function DashboardRowThree({ scriptsReady }) {
         <DashboardRowThreeWorldHeadlinesCards scriptsReady={scriptsReady} />
       </div>
       <div className="col-lg-12 mb-4">
-        <DashboardRowThreeNewsCoverage scriptsReady={scriptsReady} />
+        <DashboardRowThreeNewsCoverageCards scriptsReady={scriptsReady} />
       </div>
-
-
+      <div className="col-lg-12 mb-4">
+        <DashboardRowThreeBusinessNewsCards scriptsReady={scriptsReady} />
+      </div>
     </div>
   )
 }

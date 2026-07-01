@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Article Commenting Options</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f4efe7;
+      --bg-soft: #fbf7f1;
+      --card: rgba(255, 252, 247, 0.86);
+      --ink: #1f2937;
+      --muted: #5f6c7b;
+      --line: rgba(31, 41, 55, 0.12);
+      --brand: #9a3412;
+      --brand-soft: #fed7aa;
+      --accent: #0f766e;
+      --warn: #b45309;
+      --risk: #b91c1c;
+      --shadow: 0 18px 46px rgba(73, 39, 9, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--ink);
+      font-family: "Public Sans", system-ui, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(154, 52, 18, 0.12), transparent 34%),
+        radial-gradient(circle at 88% 12%, rgba(15, 118, 110, 0.12), transparent 26%),
+        linear-gradient(180deg, var(--bg), #efe6db);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(rgba(255,255,255,0.25) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.25) 1px, transparent 1px);
+      background-size: 38px 38px;
+      mask-image: linear-gradient(180deg, rgba(0,0,0,0.55), transparent 92%);
+      pointer-events: none;
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 52px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.55);
+      border: 1px solid rgba(31, 41, 55, 0.08);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .eyebrow .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(15, 118, 110, 0.12);
+    }
+
+    .hero,
+    .panel,
+    .decision,
+    .table-wrap,
+    .code-block {
+      border: 1px solid var(--line);
+      background: var(--card);
+      backdrop-filter: blur(14px);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      margin-top: 16px;
+      padding: 32px;
+      border-radius: 30px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      right: -50px;
+      top: -70px;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(154, 52, 18, 0.14), transparent 70%);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: "Fraunces", serif;
+      letter-spacing: -0.03em;
+    }
+
+    h1 {
+      font-size: clamp(2.3rem, 5vw, 4.4rem);
+      line-height: 0.96;
+      margin-top: 14px;
+      max-width: 11ch;
+    }
+
+    .lede {
+      max-width: 62ch;
+      color: #394657;
+      line-height: 1.75;
+      font-size: 1.03rem;
+      margin: 18px 0 24px;
+    }
+
+    .hero-grid,
+    .grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .hero-grid {
+      grid-template-columns: 1.6fr 1fr;
+      align-items: start;
+    }
+
+    .grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      margin-top: 22px;
+    }
+
+    .metric,
+    .mini-card,
+    .option,
+    .step {
+      border-radius: 22px;
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.68);
+    }
+
+    .metric,
+    .mini-card {
+      padding: 16px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 1.7rem;
+      margin-bottom: 6px;
+      color: var(--brand);
+    }
+
+    .metric span,
+    .mini-card p,
+    .option p,
+    .step p,
+    td,
+    li {
+      color: #455468;
+      line-height: 1.65;
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    section {
+      margin-top: 24px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 14px;
+    }
+
+    .section-head p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 56ch;
+    }
+
+    .option-grid,
+    .decision-grid,
+    .steps {
+      display: grid;
+      gap: 16px;
+    }
+
+    .option-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .decision-grid {
+      grid-template-columns: 1.2fr 0.8fr;
+    }
+
+    .option,
+    .decision,
+    .table-wrap,
+    .code-block {
+      border-radius: 26px;
+      padding: 22px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+
+    .badge.good { background: #d1fae5; color: #065f46; }
+    .badge.mid { background: #fef3c7; color: #92400e; }
+    .badge.risk { background: #fee2e2; color: #991b1b; }
+
+    ul {
+      margin: 12px 0 0;
+      padding-left: 18px;
+    }
+
+    .decision {
+      background: linear-gradient(180deg, rgba(255,255,255,0.88), rgba(255,248,240,0.76));
+    }
+
+    .callout {
+      border-left: 4px solid var(--brand);
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(154, 52, 18, 0.07);
+      margin: 14px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid rgba(31, 41, 55, 0.09);
+      vertical-align: top;
+      font-size: 0.96rem;
+    }
+
+    th {
+      color: var(--ink);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    pre {
+      margin: 0;
+      overflow: auto;
+      font-size: 0.9rem;
+      line-height: 1.65;
+      color: #1f2937;
+    }
+
+    .steps {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .step {
+      padding: 18px;
+    }
+
+    .step strong {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--brand);
+    }
+
+    .footnote {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 980px) {
+      .hero-grid,
+      .grid,
+      .option-grid,
+      .decision-grid,
+      .steps {
+        grid-template-columns: 1fr;
+      }
+
+      .hero {
+        padding: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="eyebrow"><span class="dot"></span>Next Branch Planning</div>
+
+    <section class="hero">
+      <div class="hero-grid">
+        <div>
+          <h1>Article Comments Without Full User Signup</h1>
+          <p class="lede">
+            You already persist articles in MySQL via <code>news_articles</code>. The next branch can add lightweight commenting by creating a pseudo-profile on first comment, seeded from randomuser.me, then gradually replacing parts of that profile when the visitor explicitly provides better data later.
+          </p>
+          <div class="grid">
+            <div class="metric">
+              <strong>1</strong>
+              <span>Keep article comments scoped to stored articles only.</span>
+            </div>
+            <div class="metric">
+              <strong>2</strong>
+              <span>Preserve the randomuser payload shape you actually use.</span>
+            </div>
+            <div class="metric">
+              <strong>3</strong>
+              <span>Separate identity signals from display-profile data.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="mini-card">
+            <h2>Working assumption</h2>
+            <p>The first release supports top-level comments only. Replies, moderation queues, and account editing can land in later branches.</p>
+          </div>
+          <div class="mini-card">
+            <h2>Design pressure</h2>
+            <p>IP addresses and browser geolocation can help re-identify a returning visitor, but they are weak as primary identity keys and sensitive from a privacy standpoint.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>Constraints From The Current Backend</h2>
+          <p>The branch should fit the existing persisted-article model instead of rebuilding account infrastructure from scratch.</p>
+        </div>
+      </div>
+      <div class="option-grid">
+        <article class="option">
+          <span class="badge good">Already present</span>
+          <h3>Stored article identity</h3>
+          <p>Articles already have a durable <code>article_hash</code>. Comments should attach to the article row by foreign key, not by headline or URL text.</p>
+        </article>
+        <article class="option">
+          <span class="badge mid">Needs care</span>
+          <h3>Random user seed data</h3>
+          <p>Only a subset is useful for a comment profile: display name, username, email placeholder, nat, login uuid, picture thumbnail, and a limited location object.</p>
+        </article>
+        <article class="option">
+          <span class="badge risk">Main risk</span>
+          <h3>Identity matching</h3>
+          <p>Raw IP alone is unstable and often shared across multiple people. Geolocation alone is even weaker. Treat both as optional signals, not as the canonical account key.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>Identity Strategy Options</h2>
+          <p>The branch decision is less about comments themselves and more about how a future returning commenter gets mapped back to the same pseudo-account.</p>
+        </div>
+      </div>
+      <div class="option-grid">
+        <article class="option">
+          <span class="badge good">Recommended</span>
+          <h3>A. Seeded profile + first-party visitor key</h3>
+          <p>Create a pseudo-user when the first comment is submitted. Store a server-generated visitor key in an HttpOnly cookie and use it as the main return-path identifier.</p>
+          <ul>
+            <li>Most stable for repeat comments</li>
+            <li>Least dependent on sensitive network data</li>
+            <li>Still allows optional IP/location enrichment</li>
+          </ul>
+        </article>
+        <article class="option">
+          <span class="badge mid">Possible</span>
+          <h3>B. Hashed consented fingerprint</h3>
+          <p>Hash normalized IP plus coarse geolocation plus an application salt. Reuse the same pseudo-user when the hash matches later.</p>
+          <ul>
+            <li>Works without a cookie if signals stay stable</li>
+            <li>More privacy-sensitive</li>
+            <li>False matches and missed matches are likely</li>
+          </ul>
+        </article>
+        <article class="option">
+          <span class="badge risk">Not advised first</span>
+          <h3>C. Raw IP/location as account identity</h3>
+          <p>This is easy to explain but brittle in practice. NAT, VPNs, mobile network churn, and consent refusal will make the account experience inconsistent.</p>
+          <ul>
+            <li>Higher privacy burden</li>
+            <li>Unreliable for long-term identity</li>
+            <li>Difficult to justify as the primary key</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="decision-grid">
+      <article class="decision">
+        <h2>My Recommendation For The Next Branch</h2>
+        <div class="callout">
+          Build comments around a lightweight <strong>comment_users</strong> table plus a <strong>article_comments</strong> table, and keep consented identity evidence in separate columns or a separate table. Do not overwrite fake profile fields with IP address data just to make the profile re-identifiable.
+        </div>
+        <p>
+          The randomuser data should remain what it is: seed profile presentation. If a visitor later grants approximate location or eventually edits their own profile, that becomes first-party profile data, not a mutation of the original randomuser object. That approach keeps the model understandable and auditable.
+        </p>
+        <p>
+          If you want returning commenters before formal sign-up exists, use a server-issued visitor token as the primary lookup key. Then optionally store consented IP and geolocation snapshots for abuse analysis, soft matching, and later profile enrichment.
+        </p>
+      </article>
+
+      <aside class="decision">
+        <h2>First branch scope</h2>
+        <ul>
+          <li>Create schema for pseudo-users and top-level comments</li>
+          <li>Support one profile per visitor token</li>
+          <li>Persist randomuser subset plus raw subset JSON</li>
+          <li>Store thumbnail bytes and MIME type only</li>
+          <li>Record consent flags for IP and geolocation</li>
+          <li>Skip replies, likes, moderation UI, and profile editing</li>
+        </ul>
+      </aside>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>Suggested Database Shape</h2>
+          <p>Keep the schema intentionally small. Preserve only the randomuser structure you care about, and normalize what you need for queries.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Table</th>
+              <th>Purpose</th>
+              <th>Important columns</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>comment_users</strong></td>
+              <td>One pseudo-account per visitor or identity grouping.</td>
+              <td>id, visitor_key_hash, source, display_name, username, email_placeholder, profile_thumbnail_blob, profile_thumbnail_mime, randomuser_login_uuid, nat, raw_profile_json, created_at, updated_at</td>
+            </tr>
+            <tr>
+              <td><strong>comment_user_signals</strong></td>
+              <td>Consent-aware identity and location evidence, separate from display profile.</td>
+              <td>id, comment_user_id, signal_type, signal_hash, ip_address_encrypted_or_null, country_code, region_name, city_name, latitude, longitude, consent_granted, captured_at</td>
+            </tr>
+            <tr>
+              <td><strong>article_comments</strong></td>
+              <td>Top-level comments attached to persisted articles.</td>
+              <td>id, article_id, comment_user_id, body, status, created_at, updated_at, deleted_at</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="footnote">If you want an even smaller first cut, <strong>comment_user_signals</strong> can be folded into <strong>comment_users</strong>, but separating it now makes future consent and audit handling much cleaner.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>Randomuser Fields Worth Keeping</h2>
+          <p>The payload does not need to be mirrored 1:1 in relational columns. Keep a subset in the same nested JSON structure, plus a few extracted columns for queries and display.</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Keep</th>
+              <th>Why</th>
+              <th>Store as</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>name.title, name.first, name.last</td>
+              <td>Display name construction</td>
+              <td>Nested JSON + flattened display_name</td>
+            </tr>
+            <tr>
+              <td>login.uuid, login.username</td>
+              <td>Stable upstream seed identifiers</td>
+              <td>Nested JSON + indexed scalar columns</td>
+            </tr>
+            <tr>
+              <td>email</td>
+              <td>Placeholder identity field until user edits profile</td>
+              <td>Scalar column and JSON</td>
+            </tr>
+            <tr>
+              <td>location.country, state, city</td>
+              <td>Light profile flavor only</td>
+              <td>Nested JSON only unless you plan to query it</td>
+            </tr>
+            <tr>
+              <td>picture.thumbnail</td>
+              <td>Immediate avatar use</td>
+              <td>URL in JSON plus downloaded thumbnail bytes in BLOB</td>
+            </tr>
+            <tr>
+              <td>nat</td>
+              <td>Harmless display metadata</td>
+              <td>Scalar column and JSON</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>Thoughts On IP And Location</h2>
+          <p>This is the part most likely to cause future cleanup if the first branch oversimplifies it.</p>
+        </div>
+      </div>
+      <div class="option-grid">
+        <article class="option">
+          <span class="badge good">Safe pattern</span>
+          <h3>Use explicit consent flags</h3>
+          <p>Persist whether IP capture and geolocation capture were granted. That matters if you later add export, deletion, or moderation workflows.</p>
+        </article>
+        <article class="option">
+          <span class="badge mid">Better storage</span>
+          <h3>Hash for matching, keep raw sparingly</h3>
+          <p>If you store network-derived identity signals, use a salted hash for lookup. Keep raw IP only if you have a concrete operational reason and a retention plan.</p>
+        </article>
+        <article class="option">
+          <span class="badge risk">Avoid</span>
+          <h3>Do not map IP into profile name fields</h3>
+          <p>Replacing fake display data with IP or coordinates inside the same profile object will make the model confusing and harder to reason about later.</p>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>Starter SQL Sketch</h2>
+          <p>Not production-final, but this is a good branch target for the first migration set.</p>
+        </div>
+      </div>
+      <div class="code-block">
+        <pre>CREATE TABLE comment_users (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  visitor_key_hash CHAR(64) NOT NULL,
+  source ENUM('randomuser_seed', 'user_enriched') NOT NULL DEFAULT 'randomuser_seed',
+  display_name VARCHAR(191) NOT NULL,
+  username VARCHAR(191) NULL,
+  email_placeholder VARCHAR(191) NULL,
+  randomuser_login_uuid CHAR(36) NULL,
+  nat CHAR(8) NULL,
+  profile_thumbnail_blob LONGBLOB NULL,
+  profile_thumbnail_mime VARCHAR(64) NULL,
+  raw_profile_json JSON NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_comment_users_visitor_key_hash (visitor_key_hash),
+  KEY idx_comment_users_randomuser_login_uuid (randomuser_login_uuid)
+);
+
+CREATE TABLE comment_user_signals (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  comment_user_id BIGINT UNSIGNED NOT NULL,
+  signal_type ENUM('ip', 'geolocation', 'combined') NOT NULL,
+  signal_hash CHAR(64) NOT NULL,
+  ip_address_value VARCHAR(64) NULL,
+  country_code VARCHAR(8) NULL,
+  region_name VARCHAR(191) NULL,
+  city_name VARCHAR(191) NULL,
+  latitude DECIMAL(9,6) NULL,
+  longitude DECIMAL(9,6) NULL,
+  consent_granted TINYINT(1) NOT NULL DEFAULT 0,
+  captured_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_comment_user_signals_user_id (comment_user_id),
+  KEY idx_comment_user_signals_signal_hash (signal_hash),
+  CONSTRAINT fk_comment_user_signals_user
+    FOREIGN KEY (comment_user_id) REFERENCES comment_users(id)
+      ON DELETE CASCADE
+);
+
+CREATE TABLE article_comments (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  article_id INT UNSIGNED NOT NULL,
+  comment_user_id BIGINT UNSIGNED NOT NULL,
+  body TEXT NOT NULL,
+  status ENUM('published', 'hidden', 'deleted') NOT NULL DEFAULT 'published',
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP NULL,
+  PRIMARY KEY (id),
+  KEY idx_article_comments_article_id (article_id),
+  KEY idx_article_comments_comment_user_id (comment_user_id),
+  CONSTRAINT fk_article_comments_article
+    FOREIGN KEY (article_id) REFERENCES news_articles(id)
+      ON DELETE CASCADE,
+  CONSTRAINT fk_article_comments_user
+    FOREIGN KEY (comment_user_id) REFERENCES comment_users(id)
+      ON DELETE RESTRICT
+);</pre>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2>Suggested Branch Sequence</h2>
+          <p>Keep the first branch narrow enough that it can be validated end-to-end without building a full social system.</p>
+        </div>
+      </div>
+      <div class="steps">
+        <article class="step">
+          <strong>Phase 1</strong>
+          <p>Add SQL migrations for pseudo-users, comment signals, and article comments.</p>
+        </article>
+        <article class="step">
+          <strong>Phase 2</strong>
+          <p>Add API endpoints to create a comment profile, post a comment, and list comments for one article.</p>
+        </article>
+        <article class="step">
+          <strong>Phase 3</strong>
+          <p>Fetch one randomuser seed on first comment only, store the subset JSON, and download the thumbnail bytes.</p>
+        </article>
+        <article class="step">
+          <strong>Phase 4</strong>
+          <p>Wire the frontend article detail or article card UI to render comments and submit a new one.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

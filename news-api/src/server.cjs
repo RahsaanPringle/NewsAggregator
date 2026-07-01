@@ -1,4 +1,5 @@
 const crypto = require('node:crypto')
+const https = require('node:https')
 const path = require('node:path')
 const dotenv = require('dotenv')
 const express = require('express')
@@ -21,6 +22,82 @@ const CORS_ORIGIN = normalizeCorsOrigins(process.env.CORS_ORIGIN)
 
 const pool = createMysqlPool()
 const app = express()
+
+const CREATE_NEWS_ARTICLES_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS news_articles (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    article_hash CHAR(64) NOT NULL,
+    article_id VARCHAR(191) NULL,
+    title TEXT NULL,
+    link TEXT NULL,
+    snippet TEXT NULL,
+    source_name VARCHAR(191) NULL,
+    published_datetime_utc DATETIME NULL,
+    authors_json TEXT NULL,
+    endpoint_path VARCHAR(255) NULL,
+    query_params_json TEXT NULL,
+    raw_article_json LONGTEXT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_news_articles_article_hash (article_hash),
+    KEY idx_news_articles_published_datetime_utc (published_datetime_utc)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+`
+
+const CREATE_COMMENT_USERS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS comment_users (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    signal_hash CHAR(64) NOT NULL,
+    profile_source VARCHAR(32) NOT NULL DEFAULT 'randomuser',
+    display_name VARCHAR(191) NOT NULL,
+    username VARCHAR(191) NULL,
+    email_placeholder VARCHAR(191) NULL,
+    gender VARCHAR(32) NULL,
+    nat VARCHAR(16) NULL,
+    randomuser_login_uuid CHAR(36) NULL,
+    ip_address_value VARCHAR(64) NULL,
+    ip_address_consent TINYINT(1) NOT NULL DEFAULT 0,
+    location_consent TINYINT(1) NOT NULL DEFAULT 0,
+    location_json LONGTEXT NULL,
+    profile_thumbnail_url TEXT NULL,
+    profile_thumbnail_mime VARCHAR(64) NULL,
+    profile_thumbnail_blob LONGBLOB NULL,
+    raw_profile_json LONGTEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_comment_users_signal_hash (signal_hash),
+    KEY idx_comment_users_randomuser_login_uuid (randomuser_login_uuid)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+`
+
+const CREATE_ARTICLE_COMMENTS_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS article_comments (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    article_id INT UNSIGNED NOT NULL,
+    parent_comment_id BIGINT UNSIGNED NULL,
+    comment_user_id BIGINT UNSIGNED NOT NULL,
+    body TEXT NOT NULL,
+    status ENUM('published', 'hidden', 'deleted') NOT NULL DEFAULT 'published',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL,
+    PRIMARY KEY (id),
+    KEY idx_article_comments_article_id (article_id),
+    KEY idx_article_comments_parent_comment_id (parent_comment_id),
+    KEY idx_article_comments_comment_user_id (comment_user_id),
+    CONSTRAINT fk_article_comments_article
+      FOREIGN KEY (article_id) REFERENCES news_articles(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_article_comments_parent
+      FOREIGN KEY (parent_comment_id) REFERENCES article_comments(id)
+        ON DELETE SET NULL,
+    CONSTRAINT fk_article_comments_user
+      FOREIGN KEY (comment_user_id) REFERENCES comment_users(id)
+        ON DELETE RESTRICT
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+`
 
 app.disable('x-powered-by')
 app.use(helmet())
@@ -231,6 +308,146 @@ app.get('/api/articles/:articleHash', async (request, response) => {
   }
 })
 
+app.get('/api/articles/:articleHash/comments', async (request, response) => {
+  if (!isMysqlConfigured()) {
+    response.status(503).json({ error: 'MySQL is not configured.' })
+    return
+  }
+
+  try {
+    await ensureSchema()
+
+    const articleRow = await findArticleByHash(request.params.articleHash)
+    if (!articleRow) {
+      response.status(404).json({ error: 'Article not found.' })
+      return
+    }
+
+    const [rows] = await pool.query(
+      `SELECT
+        c.id,
+        c.parent_comment_id,
+        c.body,
+        c.status,
+        c.created_at,
+        c.updated_at,
+        u.id AS user_id,
+        u.display_name,
+        u.username,
+        u.profile_thumbnail_mime,
+        u.profile_thumbnail_blob,
+        u.raw_profile_json
+      FROM article_comments c
+      INNER JOIN comment_users u ON u.id = c.comment_user_id
+      WHERE c.article_id = ?
+        AND c.deleted_at IS NULL
+        AND c.status = 'published'
+      ORDER BY c.created_at ASC`,
+      [articleRow.id],
+    )
+
+    response.json({
+      article_hash: articleRow.article_hash,
+      items: rows.map(normalizeCommentRow),
+    })
+  } catch (error) {
+    response.status(502).json({ error: error.message || 'Unable to load comments.' })
+  }
+})
+
+app.post('/api/articles/:articleHash/comments', async (request, response) => {
+  if (!isMysqlConfigured()) {
+    response.status(503).json({ error: 'MySQL is not configured.' })
+    return
+  }
+
+  const body = normalizeNullableString(request.body?.body)
+  if (!body) {
+    response.status(400).json({ error: 'Request body must include a non-empty comment body.' })
+    return
+  }
+
+  const requestedParentCommentId = normalizeInteger(request.body?.parent_comment_id)
+  const parentCommentId = requestedParentCommentId && requestedParentCommentId > 0
+    ? requestedParentCommentId
+    : null
+
+  try {
+    await ensureSchema()
+
+    const articleRow = await findArticleByHash(request.params.articleHash)
+    if (!articleRow) {
+      response.status(404).json({ error: 'Article not found.' })
+      return
+    }
+
+    if (parentCommentId) {
+      const [parentRows] = await pool.query(
+        `SELECT id
+         FROM article_comments
+         WHERE id = ?
+           AND article_id = ?
+           AND deleted_at IS NULL
+           AND status = 'published'
+         LIMIT 1`,
+        [parentCommentId, articleRow.id],
+      )
+
+      if (parentRows.length === 0) {
+        response.status(400).json({ error: 'Parent comment was not found for this article.' })
+        return
+      }
+    }
+
+    const location = normalizeLocationInput(request.body?.location)
+    const consent = normalizeConsentInput(request.body?.consent)
+    const requesterIp = getRequestIpAddress(request)
+    const signalHash = computeCommentUserSignalHash(requesterIp, consent.location ? location : null)
+    const userId = await findOrCreateCommentUser({
+      signalHash,
+      requesterIp,
+      location,
+      consent,
+    })
+
+    const [result] = await pool.execute(
+      `INSERT INTO article_comments (
+        article_id,
+        parent_comment_id,
+        comment_user_id,
+        body,
+        status
+      ) VALUES (?, ?, ?, ?, 'published')`,
+      [articleRow.id, parentCommentId, userId, body],
+    )
+
+    const [rows] = await pool.query(
+      `SELECT
+        c.id,
+        c.parent_comment_id,
+        c.body,
+        c.status,
+        c.created_at,
+        c.updated_at,
+        u.id AS user_id,
+        u.display_name,
+        u.username,
+        u.profile_thumbnail_mime,
+        u.profile_thumbnail_blob,
+        u.raw_profile_json
+      FROM article_comments c
+      INNER JOIN comment_users u ON u.id = c.comment_user_id
+      WHERE c.id = ?
+      LIMIT 1`,
+      [result.insertId],
+    )
+
+    response.status(201).json(normalizeCommentRow(rows[0]))
+  } catch (error) {
+    response.status(502).json({ error: error.message || 'Unable to create comment.' })
+  }
+})
+
 app.use((error, _request, response, _next) => {
   response.status(500).json({ error: error.message || 'Unexpected server error.' })
 })
@@ -241,27 +458,363 @@ app.listen(PORT, () => {
 })
 
 async function ensureSchema() {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS news_articles (
-      id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-      article_hash CHAR(64) NOT NULL,
-      article_id VARCHAR(191) NULL,
-      title TEXT NULL,
-      link TEXT NULL,
-      snippet TEXT NULL,
-      source_name VARCHAR(191) NULL,
-      published_datetime_utc DATETIME NULL,
-      authors_json TEXT NULL,
-      endpoint_path VARCHAR(255) NULL,
-      query_params_json TEXT NULL,
-      raw_article_json LONGTEXT NULL,
-      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      PRIMARY KEY (id),
-      UNIQUE KEY uq_news_articles_article_hash (article_hash),
-      KEY idx_news_articles_published_datetime_utc (published_datetime_utc)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-  `)
+  await pool.query(CREATE_NEWS_ARTICLES_TABLE_SQL)
+  await pool.query(CREATE_COMMENT_USERS_TABLE_SQL)
+  await pool.query(CREATE_ARTICLE_COMMENTS_TABLE_SQL)
+  await ensureArticleCommentsReplySchema()
+}
+
+async function ensureArticleCommentsReplySchema() {
+  const [columnRows] = await pool.query(
+    `SELECT 1
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ?
+       AND TABLE_NAME = 'article_comments'
+       AND COLUMN_NAME = 'parent_comment_id'
+     LIMIT 1`,
+    [MYSQL_DATABASE],
+  )
+
+  if (columnRows.length === 0) {
+    await pool.query(
+      `ALTER TABLE article_comments
+       ADD COLUMN parent_comment_id BIGINT UNSIGNED NULL AFTER article_id`,
+    )
+  }
+
+  const [indexRows] = await pool.query(
+    `SELECT 1
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = ?
+       AND TABLE_NAME = 'article_comments'
+       AND INDEX_NAME = 'idx_article_comments_parent_comment_id'
+     LIMIT 1`,
+    [MYSQL_DATABASE],
+  )
+
+  if (indexRows.length === 0) {
+    await pool.query(
+      `ALTER TABLE article_comments
+       ADD KEY idx_article_comments_parent_comment_id (parent_comment_id)`,
+    )
+  }
+
+  const [foreignKeyRows] = await pool.query(
+    `SELECT 1
+     FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS
+     WHERE CONSTRAINT_SCHEMA = ?
+       AND TABLE_NAME = 'article_comments'
+       AND CONSTRAINT_NAME = 'fk_article_comments_parent'
+     LIMIT 1`,
+    [MYSQL_DATABASE],
+  )
+
+  if (foreignKeyRows.length === 0) {
+    await pool.query(
+      `ALTER TABLE article_comments
+       ADD CONSTRAINT fk_article_comments_parent
+       FOREIGN KEY (parent_comment_id) REFERENCES article_comments(id)
+       ON DELETE SET NULL`,
+    )
+  }
+}
+
+async function findArticleByHash(articleHash) {
+  const [rows] = await pool.query(
+    'SELECT id, article_hash FROM news_articles WHERE article_hash = ? LIMIT 1',
+    [articleHash],
+  )
+
+  return rows[0] ?? null
+}
+
+async function findOrCreateCommentUser({ signalHash, requesterIp, location, consent }) {
+  const [existingRows] = await pool.query(
+    'SELECT id FROM comment_users WHERE signal_hash = ? LIMIT 1',
+    [signalHash],
+  )
+
+  if (existingRows.length > 0) {
+    return existingRows[0].id
+  }
+
+  const randomUserProfile = await fetchRandomUserProfile()
+  const profile = projectRandomUserProfile(randomUserProfile, consent.location ? location : null)
+  const thumbnail = await downloadThumbnailAsset(profile.picture?.thumbnail)
+  const displayName = buildDisplayName(profile)
+
+  const [result] = await pool.execute(
+    `INSERT INTO comment_users (
+      signal_hash,
+      profile_source,
+      display_name,
+      username,
+      email_placeholder,
+      gender,
+      nat,
+      randomuser_login_uuid,
+      ip_address_value,
+      ip_address_consent,
+      location_consent,
+      location_json,
+      profile_thumbnail_url,
+      profile_thumbnail_mime,
+      profile_thumbnail_blob,
+      raw_profile_json
+    ) VALUES (?, 'randomuser', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      signalHash,
+      displayName,
+      normalizeNullableString(profile.login?.username, 191),
+      normalizeNullableString(profile.email, 191),
+      normalizeNullableString(profile.gender, 32),
+      normalizeNullableString(profile.nat, 16),
+      normalizeNullableString(profile.login?.uuid, 36),
+      consent.ipAddress ? normalizeNullableString(requesterIp, 64) : null,
+      consent.ipAddress ? 1 : 0,
+      consent.location ? 1 : 0,
+      location ? JSON.stringify(location) : null,
+      normalizeNullableString(profile.picture?.thumbnail),
+      thumbnail.mimeType,
+      thumbnail.buffer,
+      JSON.stringify(profile),
+    ],
+  )
+
+  return result.insertId
+}
+
+async function fetchRandomUserProfile() {
+  const payload = await httpsRequestJson('https://randomuser.me/api/')
+  const profile = Array.isArray(payload?.results) ? payload.results[0] : null
+
+  if (!isPlainObject(profile)) {
+    throw new Error('RandomUser returned an unexpected payload.')
+  }
+
+  return profile
+}
+
+function projectRandomUserProfile(profile, locationOverride) {
+  const projected = {
+    gender: normalizeNullableString(profile.gender, 32),
+    name: {
+      title: normalizeNullableString(profile.name?.title, 32),
+      first: normalizeNullableString(profile.name?.first, 191),
+      last: normalizeNullableString(profile.name?.last, 191),
+    },
+    location: {
+      city: normalizeNullableString(profile.location?.city, 191),
+      state: normalizeNullableString(profile.location?.state, 191),
+      country: normalizeNullableString(profile.location?.country, 191),
+      postcode: normalizeNullableString(profile.location?.postcode, 32),
+      coordinates: {
+        latitude: normalizeNullableString(profile.location?.coordinates?.latitude, 64),
+        longitude: normalizeNullableString(profile.location?.coordinates?.longitude, 64),
+      },
+      timezone: {
+        offset: normalizeNullableString(profile.location?.timezone?.offset, 32),
+        description: normalizeNullableString(profile.location?.timezone?.description, 191),
+      },
+    },
+    email: normalizeNullableString(profile.email, 191),
+    login: {
+      uuid: normalizeNullableString(profile.login?.uuid, 36),
+      username: normalizeNullableString(profile.login?.username, 191),
+    },
+    dob: {
+      date: normalizeNullableString(profile.dob?.date, 64),
+      age: normalizeInteger(profile.dob?.age),
+    },
+    registered: {
+      date: normalizeNullableString(profile.registered?.date, 64),
+      age: normalizeInteger(profile.registered?.age),
+    },
+    phone: normalizeNullableString(profile.phone, 64),
+    cell: normalizeNullableString(profile.cell, 64),
+    picture: {
+      thumbnail: normalizeNullableString(profile.picture?.thumbnail),
+    },
+    nat: normalizeNullableString(profile.nat, 16),
+  }
+
+  if (locationOverride) {
+    projected.location = {
+      city: locationOverride.city,
+      state: locationOverride.state,
+      country: locationOverride.country,
+      postcode: locationOverride.postcode,
+      coordinates: {
+        latitude: locationOverride.latitude,
+        longitude: locationOverride.longitude,
+      },
+      timezone: {
+        offset: null,
+        description: null,
+      },
+    }
+  }
+
+  return projected
+}
+
+async function downloadThumbnailAsset(url) {
+  const normalizedUrl = normalizeNullableString(url)
+  if (!normalizedUrl) {
+    return { buffer: null, mimeType: null }
+  }
+
+  try {
+    const response = await httpsRequestBuffer(normalizedUrl)
+    return {
+      buffer: response.buffer,
+      mimeType: normalizeNullableString(response.contentType, 64),
+    }
+  } catch {
+    return { buffer: null, mimeType: null }
+  }
+}
+
+function buildDisplayName(profile) {
+  const nameParts = [profile.name?.first, profile.name?.last].filter(Boolean)
+  if (nameParts.length > 0) {
+    return nameParts.join(' ').slice(0, 191)
+  }
+
+  return normalizeNullableString(profile.login?.username, 191) || 'Guest Commenter'
+}
+
+function normalizeCommentRow(row) {
+  if (!row) {
+    return null
+  }
+
+  const profile = safeJsonParse(row.raw_profile_json, {})
+
+  return {
+    id: row.id,
+    parent_comment_id: row.parent_comment_id,
+    body: row.body,
+    status: row.status,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    user: {
+      id: row.user_id,
+      display_name: row.display_name,
+      username: row.username,
+      profile,
+      profile_thumbnail_data_url: toDataUrl(row.profile_thumbnail_mime, row.profile_thumbnail_blob),
+    },
+  }
+}
+
+function getRequestIpAddress(request) {
+  const forwarded = normalizeNullableString(request.headers['x-forwarded-for'])
+  const candidate = forwarded ? forwarded.split(',')[0] : request.ip
+  return normalizeNullableString(String(candidate || '').replace(/^::ffff:/, ''), 64) || 'unknown'
+}
+
+function normalizeLocationInput(value) {
+  if (!isPlainObject(value)) {
+    return null
+  }
+
+  return {
+    city: normalizeNullableString(value.city ?? value.locality, 191),
+    state: normalizeNullableString(value.state ?? value.region, 191),
+    country: normalizeNullableString(value.country, 191),
+    postcode: normalizeNullableString(value.postcode ?? value.postalCode, 32),
+    latitude: normalizeCoordinate(value.latitude ?? value.lat ?? value.coords?.latitude),
+    longitude: normalizeCoordinate(value.longitude ?? value.lng ?? value.coords?.longitude),
+  }
+}
+
+function normalizeConsentInput(value) {
+  return {
+    ipAddress: normalizeBoolean(value?.ipAddress),
+    location: normalizeBoolean(value?.location),
+  }
+}
+
+function computeCommentUserSignalHash(requesterIp, location) {
+  const payload = {
+    ipAddress: normalizeNullableString(requesterIp, 64),
+    location: location
+      ? {
+          city: location.city,
+          state: location.state,
+          country: location.country,
+          postcode: location.postcode,
+          latitude: location.latitude,
+          longitude: location.longitude,
+        }
+      : null,
+  }
+
+  return crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex')
+}
+
+function httpsRequestJson(url) {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (response) => {
+        const statusCode = response.statusCode || 500
+        if (statusCode < 200 || statusCode >= 300) {
+          response.resume()
+          reject(new Error(`Request failed with status ${statusCode}.`))
+          return
+        }
+
+        let body = ''
+        response.setEncoding('utf8')
+        response.on('data', (chunk) => {
+          body += chunk
+        })
+        response.on('end', () => {
+          try {
+            resolve(JSON.parse(body))
+          } catch {
+            reject(new Error('Failed to parse JSON response.'))
+          }
+        })
+      })
+      .on('error', reject)
+  })
+}
+
+function httpsRequestBuffer(url) {
+  return new Promise((resolve, reject) => {
+    https
+      .get(url, (response) => {
+        const statusCode = response.statusCode || 500
+        if (statusCode < 200 || statusCode >= 300) {
+          response.resume()
+          reject(new Error(`Request failed with status ${statusCode}.`))
+          return
+        }
+
+        const chunks = []
+        response.on('data', (chunk) => {
+          chunks.push(chunk)
+        })
+        response.on('end', () => {
+          resolve({
+            buffer: Buffer.concat(chunks),
+            contentType: response.headers['content-type'] || null,
+          })
+        })
+      })
+      .on('error', reject)
+  })
+}
+
+function toDataUrl(mimeType, blob) {
+  if (!mimeType || !blob) {
+    return null
+  }
+
+  const buffer = Buffer.isBuffer(blob) ? blob : Buffer.from(blob)
+  return `data:${mimeType};base64,${buffer.toString('base64')}`
 }
 
 function createMysqlPool() {
@@ -330,6 +883,29 @@ function normalizeString(value, maxLength = 65535) {
 
 function normalizeNullableString(value, maxLength = 65535) {
   return normalizeString(value, maxLength)
+}
+
+function normalizeBoolean(value) {
+  return value === true || value === 1 || value === '1' || value === 'true'
+}
+
+function normalizeInteger(value) {
+  const parsed = Number.parseInt(String(value ?? ''), 10)
+  return Number.isNaN(parsed) ? null : parsed
+}
+
+function normalizeCoordinate(value) {
+  const normalized = normalizeNullableString(value, 64)
+  if (!normalized) {
+    return null
+  }
+
+  const parsed = Number.parseFloat(normalized)
+  if (Number.isNaN(parsed)) {
+    return null
+  }
+
+  return String(parsed)
 }
 
 function parseArticlePublishedDate(value) {

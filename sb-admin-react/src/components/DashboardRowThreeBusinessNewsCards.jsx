@@ -48,7 +48,7 @@ function getArticlePreviewText(article) {
   return resolved ? resolved.trim() : 'No preview available.'
 }
 
-function DashboardRowThreeWorldHeadlinesCards() {
+function DashboardRowThreeBusinessNewsCards() {
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -59,14 +59,14 @@ function DashboardRowThreeWorldHeadlinesCards() {
   useEffect(() => {
     const abortController = new AbortController()
 
-    async function loadWorldArticles() {
+    async function loadBusinessArticles() {
       setLoading(true)
       setError('')
       setSelectedCommentArticle(null)
       setCommentsByArticleHash({})
 
       try {
-        const response = await fetch('/api/world-headlines', {
+        const response = await fetch('/api/business-news', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ function DashboardRowThreeWorldHeadlinesCards() {
         })
 
         if (!response.ok) {
-          throw new Error(`World headlines sync request failed with status ${response.status}`)
+          throw new Error(`Business sync request failed with status ${response.status}`)
         }
 
         const payload = await response.json()
@@ -83,7 +83,7 @@ function DashboardRowThreeWorldHeadlinesCards() {
         setSyncStatus(payload.synced || { attempted: 0, inserted: 0, updated: 0 })
       } catch (requestError) {
         if (requestError.name !== 'AbortError') {
-          setError(requestError.message || 'Unable to load world headlines from the database.')
+          setError(requestError.message || 'Unable to load business news from the database.')
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -92,7 +92,7 @@ function DashboardRowThreeWorldHeadlinesCards() {
       }
     }
 
-    void loadWorldArticles()
+    void loadBusinessArticles()
 
     return () => {
       abortController.abort()
@@ -231,11 +231,11 @@ function DashboardRowThreeWorldHeadlinesCards() {
   return (
     <div className="card shadow mb-4">
       <div className="card-header py-3">
-        <h6 className="m-0 font-weight-bold text-primary">World Headlines (Database Random 9)</h6>
+        <h6 className="m-0 font-weight-bold text-primary">Business News (Database Random 9)</h6>
       </div>
       <div className="card-body">
         <div className="small text-gray-500 mb-3">
-          Synced from the WORLD topic feed, auto-saved to MySQL, and displayed from random rows in the database.
+          Synced from google-news13, auto-saved to MySQL, and displayed from random rows in the database.
         </div>
         <div className="small text-gray-600 mb-3">
           Sync summary: {syncStatus.attempted} attempted, {syncStatus.inserted} inserted, {syncStatus.updated} updated.
@@ -246,15 +246,15 @@ function DashboardRowThreeWorldHeadlinesCards() {
             {error}
           </div>
         ) : loading ? (
-          <div className="text-center text-gray-500 py-4">Syncing world headlines and loading database articles...</div>
+          <div className="text-center text-gray-500 py-4">Syncing business news and loading database articles...</div>
         ) : cards.length > 0 ? (
           <div className="row">{cards}</div>
         ) : (
-          <div className="text-center text-gray-500 py-4">No world headline articles were found in the database.</div>
+          <div className="text-center text-gray-500 py-4">No business articles were found in the database.</div>
         )}
       </div>
     </div>
   )
 }
 
-export default DashboardRowThreeWorldHeadlinesCards
+export default DashboardRowThreeBusinessNewsCards

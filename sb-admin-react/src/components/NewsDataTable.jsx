@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import ArticleCommentsPanel from './ArticleCommentsPanel'
 import { openNewsPopup } from '../utils/openNewsPopup'
 
 const DEFAULT_COLUMNS = ['Headline', 'Source', 'Published', 'Authors']
@@ -44,6 +45,14 @@ function buildMysqlApiUrl(routePath) {
   return MYSQL_API_BASE_URL ? `${MYSQL_API_BASE_URL}${routePath}` : routePath
 }
 
+function getActionTarget(eventTarget) {
+  return eventTarget instanceof Element ? eventTarget.closest('[data-news-action]') : null
+}
+
+function getSavedArticleHashes(articleHashes, savedArticleHashes) {
+  return articleHashes.filter((articleHash) => articleHash && savedArticleHashes.has(articleHash))
+}
+
 function NewsDataTable({
   scriptsReady,
   title,
@@ -65,6 +74,8 @@ function NewsDataTable({
   const [statusLoading, setStatusLoading] = useState(false)
   const [savingArticleHashes, setSavingArticleHashes] = useState(() => new Set())
   const [saveError, setSaveError] = useState('')
+  const [selectedCommentArticle, setSelectedCommentArticle] = useState(null)
+  const [commentsByArticleHash, setCommentsByArticleHash] = useState({})
 
   const requestUrl = useMemo(() => {
     return buildLocalApiUrl(endpointPath, queryParams)
@@ -81,6 +92,8 @@ function NewsDataTable({
       setArticleHashes([])
       setSavedArticleHashes(new Set())
       setSavingArticleHashes(new Set())
+      setSelectedCommentArticle(null)
+      setCommentsByArticleHash({})
 
       try {
         const response = await fetch(requestUrl, {
@@ -172,6 +185,53 @@ function NewsDataTable({
   }, [articles, error, loading])
 
   useEffect(() => {
+    const abortController = new AbortController()
+    const savedHashes = getSavedArticleHashes(articleHashes, savedArticleHashes)
+
+    if (!mysqlEnabled || savedHashes.length === 0) {
+      setCommentsByArticleHash({})
+      return () => {
+        abortController.abort()
+      }
+    }
+
+    async function loadCommentSummaries() {
+      try {
+        const summaryEntries = await Promise.all(
+          savedHashes.map(async (articleHash) => {
+            const response = await fetch(buildMysqlApiUrl(`/api/articles/${articleHash}/comments`), {
+              method: 'GET',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              signal: abortController.signal,
+            })
+
+            if (!response.ok) {
+              throw new Error(`Comment summary request failed with status ${response.status}`)
+            }
+
+            const payload = await response.json()
+            return [articleHash, Array.isArray(payload.items) ? payload.items : []]
+          }),
+        )
+
+        setCommentsByArticleHash(Object.fromEntries(summaryEntries))
+      } catch (requestError) {
+        if (requestError.name !== 'AbortError') {
+          setCommentsByArticleHash({})
+        }
+      }
+    }
+
+    void loadCommentSummaries()
+
+    return () => {
+      abortController.abort()
+    }
+  }, [articleHashes, mysqlEnabled, savedArticleHashes])
+
+  useEffect(() => {
     const tableElement = tableRef.current
     const dataTableApi = window.jQuery?.fn?.dataTable
 
@@ -240,12 +300,75 @@ function NewsDataTable({
     }
   }, [endpointPath, queryParams, savingArticleHashes])
 
+  const handleCommentCreated = useCallback((articleHash, createdComment) => {
+    if (!articleHash || !createdComment) {
+      return
+    }
+
+    setCommentsByArticleHash((previousState) => {
+      const existingComments = Array.isArray(previousState[articleHash]) ? previousState[articleHash] : []
+      return {
+        ...previousState,
+        [articleHash]: [...existingComments, createdComment],
+      }
+    })
+  }, [])
+
+  useEffect(() => {
+    const tableElement = tableRef.current
+    if (!tableElement) {
+      return undefined
+    }
+
+    function handleTableClick(event) {
+      const actionTarget = getActionTarget(event.target)
+      if (!actionTarget || !tableElement.contains(actionTarget)) {
+        return
+      }
+
+      const rowIndex = Number.parseInt(actionTarget.getAttribute('data-row-index') || '', 10)
+      if (Number.isNaN(rowIndex)) {
+        return
+      }
+
+      const article = articles[rowIndex]
+      const articleHash = articleHashes[rowIndex]
+      if (!article || !articleHash) {
+        return
+      }
+
+      const action = actionTarget.getAttribute('data-news-action')
+      if (action === 'save') {
+        event.preventDefault()
+        void handleAddToDatabase(article, articleHash)
+        return
+      }
+
+      if (action === 'comment' && savedArticleHashes.has(articleHash)) {
+        event.preventDefault()
+        setSelectedCommentArticle({
+          articleHash,
+          articleTitle: article.title || articleHash,
+          startComposerOpen: true,
+        })
+      }
+    }
+
+    tableElement.addEventListener('click', handleTableClick)
+
+    return () => {
+      tableElement.removeEventListener('click', handleTableClick)
+    }
+  }, [articleHashes, articles, handleAddToDatabase, savedArticleHashes])
+
   const rows = useMemo(
     () =>
       articles.map((article, index) => {
         const articleHash = articleHashes[index]
         const isSaved = articleHash ? savedArticleHashes.has(articleHash) : false
         const isSaving = articleHash ? savingArticleHashes.has(articleHash) : false
+        const articleComments = articleHash ? commentsByArticleHash[articleHash] || [] : []
+        const previewComments = articleComments.slice(0, 2)
 
         return (
           <tr key={article.article_id || `${article.title}-${index}`}>
@@ -261,6 +384,25 @@ function NewsDataTable({
                 {article.title}
               </a>
               <div className="small text-gray-500">{article.snippet}</div>
+              {isSaved ? (
+                <div className="mt-2 pt-2 border-top">
+                  <div className="small text-success font-weight-bold">
+                    {articleComments.length ? `${articleComments.length} comment${articleComments.length === 1 ? '' : 's'}` : 'No comments yet'}
+                  </div>
+                  {previewComments.length ? (
+                    <div className="mt-1">
+                      {previewComments.map((comment) => (
+                        <div className="small text-gray-700 mb-1" key={comment.id}>
+                          <span className="font-weight-bold">{comment.user?.display_name || 'Guest Commenter'}:</span>{' '}
+                          {comment.body}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="small text-gray-500 mt-1">Comments will show here after they are posted.</div>
+                  )}
+                </div>
+              ) : null}
             </td>
             <td>{article.source_name || 'Unknown source'}</td>
             <td>{formatPublishedDate(article.published_datetime_utc)}</td>
@@ -270,13 +412,24 @@ function NewsDataTable({
                 <button
                   type="button"
                   className="btn btn-sm btn-outline-primary"
+                  data-news-action="save"
+                  data-row-index={index}
                   disabled={isSaving}
-                  onClick={() => {
-                    void handleAddToDatabase(article, articleHash)
-                  }}
                 >
                   {isSaving ? 'Saving…' : 'Add to Database'}
                 </button>
+              ) : isSaved && articleHash ? (
+                <div className="btn-group btn-group-sm" role="group" aria-label="Saved article actions">
+                  <span className="btn btn-sm btn-outline-success disabled">Saved</span>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-success"
+                    data-news-action="comment"
+                    data-row-index={index}
+                  >
+                    Add Comment
+                  </button>
+                </div>
               ) : statusLoading ? (
                 <span className="small text-gray-500">Checking…</span>
               ) : (
@@ -286,7 +439,7 @@ function NewsDataTable({
           </tr>
         )
       }),
-    [articleHashes, articles, handleAddToDatabase, mysqlEnabled, savedArticleHashes, savingArticleHashes, statusLoading],
+    [articleHashes, articles, commentsByArticleHash, handleAddToDatabase, mysqlEnabled, savedArticleHashes, savingArticleHashes, statusLoading],
   )
 
   return (
@@ -343,6 +496,16 @@ function NewsDataTable({
           </table>
         </div>
       )}
+
+      {selectedCommentArticle ? (
+        <ArticleCommentsPanel
+          articleHash={selectedCommentArticle.articleHash}
+          articleTitle={selectedCommentArticle.articleTitle}
+          startComposerOpen={selectedCommentArticle.startComposerOpen}
+          onCommentCreated={(createdComment) => handleCommentCreated(selectedCommentArticle.articleHash, createdComment)}
+          onClose={() => setSelectedCommentArticle(null)}
+        />
+      ) : null}
     </div>
   )
 }

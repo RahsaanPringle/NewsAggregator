@@ -7,6 +7,8 @@ Standalone Node + Express API for the NewsAggregator project.
 - Checks whether articles already exist in MySQL.
 - Saves missing articles into MySQL.
 - Lists saved articles for inspection.
+- Stores lightweight comment users seeded from RandomUser.
+- Creates and lists top-level comments for stored articles.
 - Serves Swagger UI at `/docs`.
 
 ## Environment
@@ -50,6 +52,10 @@ Raw spec:
 ## Database Setup
 
 Run `sql/create_news_articles_table.sql` in your MySQL database before first use.
+
+For comment support, also run `sql/create_article_comments_tables.sql`.
+
+The API can also auto-create both tables on first request when MySQL credentials are configured.
 
 ## IIS / Hosting Notes
 
