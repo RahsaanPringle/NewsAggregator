@@ -76,6 +76,7 @@ const CREATE_ARTICLE_COMMENTS_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS article_comments (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     article_id INT UNSIGNED NOT NULL,
+    parent_comment_id BIGINT UNSIGNED NULL,
     comment_user_id BIGINT UNSIGNED NOT NULL,
     body TEXT NOT NULL,
     status ENUM('published', 'hidden', 'deleted') NOT NULL DEFAULT 'published',
@@ -84,10 +85,14 @@ const CREATE_ARTICLE_COMMENTS_TABLE_SQL = `
     deleted_at TIMESTAMP NULL,
     PRIMARY KEY (id),
     KEY idx_article_comments_article_id (article_id),
+    KEY idx_article_comments_parent_comment_id (parent_comment_id),
     KEY idx_article_comments_comment_user_id (comment_user_id),
     CONSTRAINT fk_article_comments_article
       FOREIGN KEY (article_id) REFERENCES news_articles(id)
         ON DELETE CASCADE,
+    CONSTRAINT fk_article_comments_parent
+      FOREIGN KEY (parent_comment_id) REFERENCES article_comments(id)
+        ON DELETE SET NULL,
     CONSTRAINT fk_article_comments_user
       FOREIGN KEY (comment_user_id) REFERENCES comment_users(id)
         ON DELETE RESTRICT
@@ -321,6 +326,7 @@ app.get('/api/articles/:articleHash/comments', async (request, response) => {
     const [rows] = await pool.query(
       `SELECT
         c.id,
+        c.parent_comment_id,
         c.body,
         c.status,
         c.created_at,
@@ -361,6 +367,11 @@ app.post('/api/articles/:articleHash/comments', async (request, response) => {
     return
   }
 
+  const requestedParentCommentId = normalizeInteger(request.body?.parent_comment_id)
+  const parentCommentId = requestedParentCommentId && requestedParentCommentId > 0
+    ? requestedParentCommentId
+    : null
+
   try {
     await ensureSchema()
 
@@ -368,6 +379,24 @@ app.post('/api/articles/:articleHash/comments', async (request, response) => {
     if (!articleRow) {
       response.status(404).json({ error: 'Article not found.' })
       return
+    }
+
+    if (parentCommentId) {
+      const [parentRows] = await pool.query(
+        `SELECT id
+         FROM article_comments
+         WHERE id = ?
+           AND article_id = ?
+           AND deleted_at IS NULL
+           AND status = 'published'
+         LIMIT 1`,
+        [parentCommentId, articleRow.id],
+      )
+
+      if (parentRows.length === 0) {
+        response.status(400).json({ error: 'Parent comment was not found for this article.' })
+        return
+      }
     }
 
     const location = normalizeLocationInput(request.body?.location)
@@ -384,16 +413,18 @@ app.post('/api/articles/:articleHash/comments', async (request, response) => {
     const [result] = await pool.execute(
       `INSERT INTO article_comments (
         article_id,
+        parent_comment_id,
         comment_user_id,
         body,
         status
-      ) VALUES (?, ?, ?, 'published')`,
-      [articleRow.id, userId, body],
+      ) VALUES (?, ?, ?, ?, 'published')`,
+      [articleRow.id, parentCommentId, userId, body],
     )
 
     const [rows] = await pool.query(
       `SELECT
         c.id,
+        c.parent_comment_id,
         c.body,
         c.status,
         c.created_at,
@@ -430,6 +461,62 @@ async function ensureSchema() {
   await pool.query(CREATE_NEWS_ARTICLES_TABLE_SQL)
   await pool.query(CREATE_COMMENT_USERS_TABLE_SQL)
   await pool.query(CREATE_ARTICLE_COMMENTS_TABLE_SQL)
+  await ensureArticleCommentsReplySchema()
+}
+
+async function ensureArticleCommentsReplySchema() {
+  const [columnRows] = await pool.query(
+    `SELECT 1
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ?
+       AND TABLE_NAME = 'article_comments'
+       AND COLUMN_NAME = 'parent_comment_id'
+     LIMIT 1`,
+    [MYSQL_DATABASE],
+  )
+
+  if (columnRows.length === 0) {
+    await pool.query(
+      `ALTER TABLE article_comments
+       ADD COLUMN parent_comment_id BIGINT UNSIGNED NULL AFTER article_id`,
+    )
+  }
+
+  const [indexRows] = await pool.query(
+    `SELECT 1
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = ?
+       AND TABLE_NAME = 'article_comments'
+       AND INDEX_NAME = 'idx_article_comments_parent_comment_id'
+     LIMIT 1`,
+    [MYSQL_DATABASE],
+  )
+
+  if (indexRows.length === 0) {
+    await pool.query(
+      `ALTER TABLE article_comments
+       ADD KEY idx_article_comments_parent_comment_id (parent_comment_id)`,
+    )
+  }
+
+  const [foreignKeyRows] = await pool.query(
+    `SELECT 1
+     FROM INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS
+     WHERE CONSTRAINT_SCHEMA = ?
+       AND TABLE_NAME = 'article_comments'
+       AND CONSTRAINT_NAME = 'fk_article_comments_parent'
+     LIMIT 1`,
+    [MYSQL_DATABASE],
+  )
+
+  if (foreignKeyRows.length === 0) {
+    await pool.query(
+      `ALTER TABLE article_comments
+       ADD CONSTRAINT fk_article_comments_parent
+       FOREIGN KEY (parent_comment_id) REFERENCES article_comments(id)
+       ON DELETE SET NULL`,
+    )
+  }
 }
 
 async function findArticleByHash(articleHash) {
@@ -606,6 +693,7 @@ function normalizeCommentRow(row) {
 
   return {
     id: row.id,
+    parent_comment_id: row.parent_comment_id,
     body: row.body,
     status: row.status,
     created_at: row.created_at,

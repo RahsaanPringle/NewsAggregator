@@ -3,10 +3,10 @@ import SavedArticleCommentSection from './SavedArticleCommentSection'
 import useNewsCardGridData from './useNewsCardGridData'
 import { openNewsPopup } from '../utils/openNewsPopup'
 
-const WORLD_ENDPOINT_PATH = '/topic-headlines'
-const WORLD_QUERY_PARAMS = {
-  topic: 'WORLD',
-  limit: 500,
+const COVERAGE_ENDPOINT_PATH = '/full-story-coverage'
+const COVERAGE_QUERY_PARAMS = {
+  story: 'CAAqNggKIjBDQklTSGpvSmMzUnZjbmt0TXpZd1NoRUtEd2pibk5UN0VCSDVpWndxM3pJc0hDZ0FQAQ',
+  sort: 'RELEVANCE',
   country: 'US',
   lang: 'en',
 }
@@ -67,7 +67,7 @@ function getArticleImageUrl(article) {
   return resolved ? resolved.trim() : ''
 }
 
-function DashboardRowThreeWorldHeadlinesCards() {
+function DashboardRowThreeNewsCoverageCards() {
   const {
     articles,
     loading,
@@ -83,9 +83,9 @@ function DashboardRowThreeWorldHeadlinesCards() {
     handleAddToDatabase,
     handleCommentCreated,
   } = useNewsCardGridData({
-    endpointPath: WORLD_ENDPOINT_PATH,
-    queryParams: WORLD_QUERY_PARAMS,
-    loadErrorLabel: 'Unable to load world headlines.',
+    endpointPath: COVERAGE_ENDPOINT_PATH,
+    queryParams: COVERAGE_QUERY_PARAMS,
+    loadErrorLabel: 'Unable to load story coverage.',
   })
 
   const visibleArticles = useMemo(() => {
@@ -131,10 +131,8 @@ function DashboardRowThreeWorldHeadlinesCards() {
           } else if (regularQueue.length > 0) {
             nextItem = regularQueue.shift() || null
           }
-        } else {
-          if (regularQueue.length > 0) {
-            nextItem = regularQueue.shift() || null
-          }
+        } else if (regularQueue.length > 0) {
+          nextItem = regularQueue.shift() || null
         }
 
         if (!nextItem || rowSlotsUsed + nextItem.slotWidth > GRID_ROW_SLOTS) {
@@ -243,10 +241,10 @@ function DashboardRowThreeWorldHeadlinesCards() {
   return (
     <div className="card shadow mb-4">
       <div className="card-header py-3">
-        <h6 className="m-0 font-weight-bold text-primary">World Headlines Card Grid</h6>
+        <h6 className="m-0 font-weight-bold text-primary">News Coverage Card Grid</h6>
       </div>
       <div className="card-body">
-        <div className="small text-gray-500 mb-3">Randomized WORLD topic feed shown as a 3-column card layout.</div>
+        <div className="small text-gray-500 mb-3">Randomized full-story coverage feed shown as a 3-column card layout.</div>
 
         {saveError ? (
           <div className="alert alert-warning" role="alert">
@@ -259,16 +257,15 @@ function DashboardRowThreeWorldHeadlinesCards() {
             {error}
           </div>
         ) : loading ? (
-          <div className="text-center text-gray-500 py-4">Loading world headlines...</div>
+          <div className="text-center text-gray-500 py-4">Loading story coverage...</div>
         ) : cards.length > 0 ? (
           <div className="row">{cards}</div>
         ) : (
-          <div className="text-center text-gray-500 py-4">No headlines returned for this topic.</div>
+          <div className="text-center text-gray-500 py-4">No articles returned for this story.</div>
         )}
-
       </div>
     </div>
   )
 }
 
-export default DashboardRowThreeWorldHeadlinesCards
+export default DashboardRowThreeNewsCoverageCards

@@ -22,6 +22,36 @@ function formatTimestamp(value) {
   }).format(parsed)
 }
 
+function buildCommentThread(comments) {
+  const byParent = new Map()
+
+  comments.forEach((comment) => {
+    const parentId = comment.parent_comment_id ?? null
+    if (!byParent.has(parentId)) {
+      byParent.set(parentId, [])
+    }
+
+    byParent.get(parentId).push(comment)
+  })
+
+  byParent.forEach((items) => {
+    items.sort((first, second) => new Date(first.created_at).getTime() - new Date(second.created_at).getTime())
+  })
+
+  function buildNodes(parentId, depth) {
+    const children = byParent.get(parentId) || []
+    return children.flatMap((child) => [
+      {
+        comment: child,
+        depth,
+      },
+      ...buildNodes(child.id, depth + 1),
+    ])
+  }
+
+  return buildNodes(null, 0)
+}
+
 function getCurrentLocation() {
   if (!navigator.geolocation) {
     return Promise.resolve(null)
@@ -58,6 +88,7 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
   const [consentIpAddress, setConsentIpAddress] = useState(true)
   const [consentLocation, setConsentLocation] = useState(false)
   const [locationStatus, setLocationStatus] = useState('')
+  const [replyTarget, setReplyTarget] = useState(null)
 
   useEffect(() => {
     const abortController = new AbortController()
@@ -101,7 +132,10 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
 
   useEffect(() => {
     setShowComposer(startComposerOpen)
+    setReplyTarget(null)
   }, [articleHash, startComposerOpen])
+
+  const threadedComments = buildCommentThread(comments)
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -133,6 +167,7 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
         },
         body: JSON.stringify({
           body: trimmedBody,
+          parent_comment_id: replyTarget?.id ?? null,
           consent: {
             ipAddress: consentIpAddress,
             location: consentLocation,
@@ -150,6 +185,7 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
       onCommentCreated?.(createdComment)
       setBody('')
       setShowComposer(false)
+      setReplyTarget(null)
     } catch (requestError) {
       setSubmitError(requestError.message || 'Unable to save your comment.')
     } finally {
@@ -174,13 +210,15 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
           <div className="small text-gray-500">
             {loading ? 'Loading comments…' : `${comments.length} comment${comments.length === 1 ? '' : 's'}`}
           </div>
-          {!showComposer ? (
+          {!showComposer && !replyTarget ? (
             <button
               type="button"
               className="btn btn-success btn-sm"
               onClick={() => {
                 setSubmitError('')
                 setLocationStatus('')
+                setReplyTarget(null)
+                setBody('')
                 setShowComposer(true)
               }}
             >
@@ -189,7 +227,7 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
           ) : null}
         </div>
 
-        {showComposer ? (
+        {showComposer && !replyTarget ? (
           <form onSubmit={handleSubmit} className="mb-4">
             <div className="form-group">
               <label htmlFor="article-comment-body" className="small text-gray-700 font-weight-bold">
@@ -268,10 +306,14 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
           </div>
         ) : loading ? (
           <div className="small text-gray-500">Loading comments…</div>
-        ) : comments.length ? (
+        ) : threadedComments.length ? (
           <div>
-            {comments.map((comment) => (
-              <article className="border rounded p-3 mb-3" key={comment.id}>
+            {threadedComments.map(({ comment, depth }) => (
+              <article
+                className="border rounded p-3 mb-3"
+                key={comment.id}
+                style={{ marginLeft: `${Math.min(depth, 4) * 20}px` }}
+              >
                 <div className="d-flex justify-content-between align-items-start mb-2">
                   <div className="d-flex align-items-center">
                     {comment.user?.profile_thumbnail_data_url ? (
@@ -291,8 +333,94 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
                       </div>
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm p-0"
+                    onClick={() => {
+                      setSubmitError('')
+                      setLocationStatus('')
+                      setBody('')
+                      setShowComposer(false)
+                      setReplyTarget(comment)
+                    }}
+                  >
+                    Reply
+                  </button>
                 </div>
                 <p className="mb-0 text-gray-800">{comment.body}</p>
+
+                {replyTarget?.id === comment.id ? (
+                  <form onSubmit={handleSubmit} className="mt-3 pt-3 border-top">
+                    <div className="form-group">
+                      <label htmlFor={`reply-comment-body-${comment.id}`} className="small text-gray-700 font-weight-bold">
+                        Reply to {comment.user?.display_name || 'commenter'}
+                      </label>
+                      <textarea
+                        id={`reply-comment-body-${comment.id}`}
+                        className="form-control"
+                        rows="3"
+                        value={body}
+                        onChange={(event) => setBody(event.target.value)}
+                        placeholder="Write a reply..."
+                        disabled={submitting}
+                      />
+                    </div>
+
+                    <div className="form-check mb-2">
+                      <input
+                        id={`reply-consent-ip-${comment.id}`}
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={consentIpAddress}
+                        onChange={(event) => setConsentIpAddress(event.target.checked)}
+                        disabled={submitting}
+                      />
+                      <label className="form-check-label small" htmlFor={`reply-consent-ip-${comment.id}`}>
+                        Use my IP address as a return identifier for this profile.
+                      </label>
+                    </div>
+
+                    <div className="form-check mb-3">
+                      <input
+                        id={`reply-consent-location-${comment.id}`}
+                        className="form-check-input"
+                        type="checkbox"
+                        checked={consentLocation}
+                        onChange={(event) => setConsentLocation(event.target.checked)}
+                        disabled={submitting}
+                      />
+                      <label className="form-check-label small" htmlFor={`reply-consent-location-${comment.id}`}>
+                        Try to include my current browser location too.
+                      </label>
+                    </div>
+
+                    {locationStatus ? <div className="small text-gray-500 mb-3">{locationStatus}</div> : null}
+                    {submitError ? (
+                      <div className="alert alert-warning" role="alert">
+                        {submitError}
+                      </div>
+                    ) : null}
+
+                    <div className="d-flex align-items-center">
+                      <button type="submit" className="btn btn-success btn-sm mr-2" disabled={submitting || !body.trim()}>
+                        {submitting ? 'Posting…' : 'Post Reply'}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        disabled={submitting}
+                        onClick={() => {
+                          setReplyTarget(null)
+                          setSubmitError('')
+                          setLocationStatus('')
+                          setBody('')
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                ) : null}
               </article>
             ))}
           </div>

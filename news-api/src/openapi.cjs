@@ -176,7 +176,7 @@ const openApiSpec = {
       },
       post: {
         tags: ['Comments'],
-        summary: 'Create a top-level comment for one saved article',
+        summary: 'Create a comment or reply for one saved article',
         parameters: [
           {
             name: 'articleHash',
@@ -347,6 +347,7 @@ const openApiSpec = {
         required: ['body'],
         properties: {
           body: { type: 'string' },
+          parent_comment_id: { type: 'integer', nullable: true },
           consent: { $ref: '#/components/schemas/CommentConsentInput' },
           location: { $ref: '#/components/schemas/CommentLocationInput' },
         },
@@ -433,6 +434,7 @@ const openApiSpec = {
         type: 'object',
         properties: {
           id: { type: 'integer' },
+          parent_comment_id: { type: 'integer', nullable: true },
           body: { type: 'string' },
           status: { type: 'string' },
           created_at: { type: 'string' },

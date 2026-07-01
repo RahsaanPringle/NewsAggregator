@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS comment_users (
 CREATE TABLE IF NOT EXISTS article_comments (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   article_id INT UNSIGNED NOT NULL,
+  parent_comment_id BIGINT UNSIGNED NULL,
   comment_user_id BIGINT UNSIGNED NOT NULL,
   body TEXT NOT NULL,
   status ENUM('published', 'hidden', 'deleted') NOT NULL DEFAULT 'published',
@@ -34,10 +35,14 @@ CREATE TABLE IF NOT EXISTS article_comments (
   deleted_at TIMESTAMP NULL,
   PRIMARY KEY (id),
   KEY idx_article_comments_article_id (article_id),
+  KEY idx_article_comments_parent_comment_id (parent_comment_id),
   KEY idx_article_comments_comment_user_id (comment_user_id),
   CONSTRAINT fk_article_comments_article
     FOREIGN KEY (article_id) REFERENCES news_articles(id)
       ON DELETE CASCADE,
+  CONSTRAINT fk_article_comments_parent
+    FOREIGN KEY (parent_comment_id) REFERENCES article_comments(id)
+      ON DELETE SET NULL,
   CONSTRAINT fk_article_comments_user
     FOREIGN KEY (comment_user_id) REFERENCES comment_users(id)
       ON DELETE RESTRICT

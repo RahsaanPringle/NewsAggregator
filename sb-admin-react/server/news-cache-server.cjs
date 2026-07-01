@@ -8,6 +8,11 @@ const mysql = require('mysql2/promise')
 const PORT = Number(process.env.JSON_SERVER_PORT || 4000)
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000
 const RAPID_API_HOST = 'real-time-news-data.p.rapidapi.com'
+const GOOGLE_NEWS_API_HOST = 'google-news13.p.rapidapi.com'
+const BUSINESS_ENDPOINT_PATH = '/business'
+const BUSINESS_QUERY_PARAMS = {
+  lr: 'en-US',
+}
 const DB_FILE_PATH = path.join(__dirname, 'db.json')
 
 let mysqlPool = null
@@ -85,6 +90,49 @@ server.get('/api/news', async (request, response) => {
     }
 
     response.status(502).json({ error: error.message || 'Unable to refresh news cache.' })
+  }
+})
+
+server.get('/api/business-news', async (_request, response) => {
+  const apiKey = process.env.RAPIDAPI_KEY || process.env.VITE_RAPIDAPI_KEY
+  if (!apiKey) {
+    response.status(500).json({
+      error: 'Missing RapidAPI key. Set RAPIDAPI_KEY or VITE_RAPIDAPI_KEY before starting the cache server.',
+    })
+    return
+  }
+
+  const mysqlConfig = getMysqlConfig()
+  if (!mysqlConfig) {
+    response.status(400).json({
+      error:
+        'MySQL is not configured. Set MYSQL_HOST, MYSQL_DATABASE, MYSQL_USER, and MYSQL_PASSWORD in your environment.',
+    })
+    return
+  }
+
+  try {
+    const payload = await fetchGoogleBusinessNews(apiKey)
+    const normalizedArticles = normalizeGoogleBusinessArticles(payload)
+
+    const pool = await getMysqlPool(mysqlConfig)
+    await ensureMySqlArticleTable(pool)
+
+    const { insertedCount, updatedCount } = await saveArticlesToMysql(pool, normalizedArticles, BUSINESS_ENDPOINT_PATH, BUSINESS_QUERY_PARAMS)
+    const randomArticles = await listRandomArticlesByEndpoint(pool, BUSINESS_ENDPOINT_PATH, 9)
+
+    response.json({
+      source: 'mysql',
+      endpointPath: BUSINESS_ENDPOINT_PATH,
+      synced: {
+        attempted: normalizedArticles.length,
+        inserted: insertedCount,
+        updated: updatedCount,
+      },
+      items: randomArticles,
+    })
+  } catch (error) {
+    response.status(502).json({ error: error.message || 'Unable to sync business news.' })
   }
 })
 
@@ -309,6 +357,212 @@ async function fetchFromRapidApi(endpointPath, queryParams, apiKey) {
   }
 
   return apiResponse.json()
+}
+
+async function fetchGoogleBusinessNews(apiKey) {
+  const queryString = new URLSearchParams(BUSINESS_QUERY_PARAMS).toString()
+  const requestUrl = `https://${GOOGLE_NEWS_API_HOST}${BUSINESS_ENDPOINT_PATH}${queryString ? `?${queryString}` : ''}`
+
+  const apiResponse = await fetch(requestUrl, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-rapidapi-host': GOOGLE_NEWS_API_HOST,
+      'x-rapidapi-key': apiKey,
+    },
+  })
+
+  if (!apiResponse.ok) {
+    throw new Error(`Google business news request failed with status ${apiResponse.status}`)
+  }
+
+  return apiResponse.json()
+}
+
+function normalizeGoogleBusinessArticles(payload) {
+  const items = Array.isArray(payload?.items) ? payload.items : []
+  const flattenedItems = []
+
+  items.forEach((item) => {
+    flattenedItems.push(item)
+
+    const subnewsItems = Array.isArray(item?.subnews) ? item.subnews : []
+    subnewsItems.forEach((subnewsItem) => {
+      flattenedItems.push(subnewsItem)
+    })
+  })
+
+  return flattenedItems
+    .map((item) => {
+      const publishedAtUtc = parseBusinessTimestamp(item?.timestamp)
+      const normalized = {
+        article_id: normalizeNullableString(item?.newsUrl || item?.title, 191),
+        title: normalizeNullableString(item?.title),
+        link: normalizeNullableString(item?.newsUrl),
+        snippet: normalizeNullableString(item?.snippet),
+        source_name: normalizeNullableString(item?.publisher, 191),
+        published_datetime_utc: publishedAtUtc,
+        authors: [],
+      }
+
+      if (!normalized.title || !normalized.link) {
+        return null
+      }
+
+      return normalized
+    })
+    .filter(Boolean)
+}
+
+function parseBusinessTimestamp(value) {
+  const normalized = normalizeNullableString(value, 32)
+  if (!normalized) {
+    return null
+  }
+
+  const numericValue = Number(normalized)
+  if (Number.isFinite(numericValue)) {
+    const dateValue = new Date(numericValue)
+    if (!Number.isNaN(dateValue.getTime())) {
+      return dateValue.toISOString()
+    }
+  }
+
+  const parsedDate = new Date(normalized)
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null
+  }
+
+  return parsedDate.toISOString()
+}
+
+async function saveArticlesToMysql(pool, articles, endpointPath, queryParams) {
+  let insertedCount = 0
+  let updatedCount = 0
+
+  for (const article of articles) {
+    const articleHash = computeArticleHash(article)
+    const authors = Array.isArray(article.authors) ? article.authors : []
+    const publishedAtUtc = parseArticlePublishedDate(article.published_datetime_utc)
+
+    const [result] = await pool.execute(
+      `INSERT INTO news_articles (
+        article_hash,
+        article_id,
+        title,
+        link,
+        snippet,
+        source_name,
+        published_datetime_utc,
+        authors_json,
+        endpoint_path,
+        query_params_json,
+        raw_article_json
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        article_id = VALUES(article_id),
+        title = VALUES(title),
+        link = VALUES(link),
+        snippet = VALUES(snippet),
+        source_name = VALUES(source_name),
+        published_datetime_utc = VALUES(published_datetime_utc),
+        authors_json = VALUES(authors_json),
+        endpoint_path = VALUES(endpoint_path),
+        query_params_json = VALUES(query_params_json),
+        raw_article_json = VALUES(raw_article_json),
+        updated_at = CURRENT_TIMESTAMP`,
+      [
+        articleHash,
+        normalizeNullableString(article.article_id, 191),
+        normalizeNullableString(article.title),
+        normalizeNullableString(article.link),
+        normalizeNullableString(article.snippet),
+        normalizeNullableString(article.source_name, 191),
+        publishedAtUtc,
+        JSON.stringify(authors),
+        normalizeNullableString(endpointPath, 255),
+        JSON.stringify(queryParams),
+        JSON.stringify(article),
+      ],
+    )
+
+    if (result.affectedRows === 1) {
+      insertedCount += 1
+    } else if (result.affectedRows >= 2) {
+      updatedCount += 1
+    }
+  }
+
+  return { insertedCount, updatedCount }
+}
+
+async function listRandomArticlesByEndpoint(pool, endpointPath, limit) {
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 9, 100))
+  const [rows] = await pool.query(
+    `SELECT
+      article_hash,
+      article_id,
+      title,
+      link,
+      snippet,
+      source_name,
+      published_datetime_utc,
+      authors_json,
+      endpoint_path,
+      query_params_json,
+      raw_article_json,
+      created_at,
+      updated_at
+    FROM news_articles
+    WHERE endpoint_path = ?
+    ORDER BY RAND()
+    LIMIT ${safeLimit}`,
+    [endpointPath],
+  )
+
+  return rows.map(normalizeMySqlArticleRow)
+}
+
+function normalizeMySqlArticleRow(row) {
+  const rawArticle = safeJsonParseObject(row.raw_article_json)
+
+  return {
+    article_hash: row.article_hash,
+    article_id: row.article_id,
+    title: row.title,
+    link: row.link,
+    snippet: row.snippet,
+    photo_url: rawArticle.photo_url || null,
+    thumbnail_url: rawArticle.thumbnail_url || null,
+    source_url: rawArticle.source_url || null,
+    source_logo_url: rawArticle.source_logo_url || null,
+    source_favicon_url: rawArticle.source_favicon_url || null,
+    source_name: row.source_name,
+    published_datetime_utc: row.published_datetime_utc,
+    authors: safeJsonParseArray(row.authors_json),
+    endpoint_path: row.endpoint_path,
+    query_params: safeJsonParseObject(row.query_params_json),
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }
+}
+
+function safeJsonParseArray(value) {
+  try {
+    const parsed = JSON.parse(value || '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function safeJsonParseObject(value) {
+  try {
+    const parsed = JSON.parse(value || '{}')
+    return isPlainObject(parsed) ? parsed : {}
+  } catch {
+    return {}
+  }
 }
 
 function getMysqlConfig() {
