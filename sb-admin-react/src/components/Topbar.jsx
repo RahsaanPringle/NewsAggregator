@@ -3,9 +3,14 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import HtmlSection from './HtmlSection'
 import UserDropdown from './UserDropdown'
 import topbarHtml from '../markup/topbar.html?raw'
-import { getCurrentCommentUserId } from '../utils/commentUserSession'
+import {
+  getCurrentCommentUserId,
+  getCurrentCommentUserSnapshot,
+  setCurrentCommentUser,
+} from '../utils/commentUserSession'
 
 const MYSQL_API_BASE_URL = String(import.meta.env.VITE_NEWS_API_BASE_URL || '').trim().replace(/\/+$/, '')
+const NEWS_API_BASE_URL_STORAGE_KEY = 'news-api-base-url'
 
 function buildMysqlApiUrl(routePath) {
   return MYSQL_API_BASE_URL ? `${MYSQL_API_BASE_URL}${routePath}` : routePath
@@ -86,14 +91,27 @@ function buildMessageItemsHtml({ loading, error, messages }) {
 
 function Topbar() {
   const [currentCommentUserId, setCurrentCommentUserId] = useState(null)
-  const [currentUser, setCurrentUser] = useState(null)
+  const [currentUser, setCurrentUser] = useState(() => getCurrentCommentUserSnapshot())
   const [messages, setMessages] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [inboxRefreshNonce, setInboxRefreshNonce] = useState(0)
 
   useEffect(() => {
-    function syncCurrentCommentUser() {
+    if (MYSQL_API_BASE_URL && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(NEWS_API_BASE_URL_STORAGE_KEY, MYSQL_API_BASE_URL)
+    }
+  }, [])
+
+  useEffect(() => {
+    function syncCurrentCommentUser(event) {
       setCurrentCommentUserId(getCurrentCommentUserId())
+      if (event?.detail?.user && typeof event.detail.user === 'object') {
+        setCurrentUser(event.detail.user)
+        return
+      }
+
+      setCurrentUser(getCurrentCommentUserSnapshot())
     }
 
     syncCurrentCommentUser()
@@ -107,8 +125,45 @@ function Topbar() {
   }, [])
 
   useEffect(() => {
+    if (currentCommentUserId) {
+      return
+    }
+
+    const abortController = new AbortController()
+
+    async function createRandomCommentUser() {
+      try {
+        const response = await fetch(buildMysqlApiUrl('/api/comment-users/random'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: abortController.signal,
+        })
+
+        if (!response.ok) {
+          throw new Error(`Random comment user request failed with status ${response.status}`)
+        }
+
+        const payload = await response.json()
+        setCurrentCommentUser(payload)
+      } catch (requestError) {
+        if (requestError.name !== 'AbortError') {
+          setCurrentUser(getCurrentCommentUserSnapshot())
+        }
+      }
+    }
+
+    void createRandomCommentUser()
+
+    return () => {
+      abortController.abort()
+    }
+  }, [currentCommentUserId])
+
+  useEffect(() => {
     if (!currentCommentUserId) {
-      setCurrentUser(null)
+      setCurrentUser(getCurrentCommentUserSnapshot())
       return
     }
 
@@ -130,9 +185,10 @@ function Topbar() {
 
         const payload = await response.json()
         setCurrentUser(payload)
+        setCurrentCommentUser(payload)
       } catch (requestError) {
         if (requestError.name !== 'AbortError') {
-          setCurrentUser(null)
+          setCurrentUser(getCurrentCommentUserSnapshot())
         }
       }
     }
@@ -141,6 +197,37 @@ function Topbar() {
 
     return () => {
       abortController.abort()
+    }
+  }, [currentCommentUserId])
+
+  useEffect(() => {
+    function handleInboxRefreshEvent(event) {
+      const recipientId = Number(event?.detail?.recipientCommentUserId || 0)
+      if (recipientId > 0 && currentCommentUserId && recipientId !== currentCommentUserId) {
+        return
+      }
+
+      setInboxRefreshNonce((previousValue) => previousValue + 1)
+    }
+
+    function handleWindowFocus() {
+      setInboxRefreshNonce((previousValue) => previousValue + 1)
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        setInboxRefreshNonce((previousValue) => previousValue + 1)
+      }
+    }
+
+    window.addEventListener('comment-message-created', handleInboxRefreshEvent)
+    window.addEventListener('focus', handleWindowFocus)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('comment-message-created', handleInboxRefreshEvent)
+      window.removeEventListener('focus', handleWindowFocus)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [currentCommentUserId])
 
@@ -193,7 +280,7 @@ function Topbar() {
     return () => {
       abortController.abort()
     }
-  }, [currentCommentUserId])
+  }, [currentCommentUserId, inboxRefreshNonce])
 
   const hasMessages = messages.length > 0
   const badgeLabel = messages.length > 99 ? '99+' : String(messages.length)

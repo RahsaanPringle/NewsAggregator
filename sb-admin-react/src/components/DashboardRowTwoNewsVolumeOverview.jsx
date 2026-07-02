@@ -3,22 +3,28 @@ import DashboardCardMenu from './DashboardCardMenu'
 
 const NEWS_CHART_DAYS = 7
 
-function buildNewsApiUrl() {
-  const searchParams = new URLSearchParams({ endpointPath: '/topic-headlines' })
-  searchParams.append('topic', 'WORLD')
-  searchParams.append('limit', '500')
-  searchParams.append('country', 'US')
-  searchParams.append('lang', 'en')
-
-  return `/api/news?${searchParams.toString()}`
+function buildSavedByDayUrl() {
+  const searchParams = new URLSearchParams({ days: String(NEWS_CHART_DAYS) })
+  return `/api/mysql/articles/saved-by-day?${searchParams.toString()}`
 }
 
-function normalizeArticles(payload) {
-  if (Array.isArray(payload?.data)) {
-    return payload.data
-  }
+function normalizeSavedByDayPayload(payload) {
+  const normalizedItems = Array.isArray(payload?.items)
+    ? payload.items
+        .map((item) => ({
+          date: typeof item?.date === 'string' ? item.date : '',
+          count: Number(item?.count || 0),
+        }))
+        .filter((item) => /^\d{4}-\d{2}-\d{2}$/.test(item.date))
+    : []
 
-  return payload?.data?.top_news?.all_articles ?? payload?.data?.all_articles ?? []
+  return {
+    enabled: Boolean(payload?.enabled),
+    totalSaved: Number(payload?.totalSaved || 0),
+    items: normalizedItems,
+    message: payload?.message || '',
+    error: payload?.error || '',
+  }
 }
 
 function buildRecentDayKeys(days) {
@@ -45,7 +51,9 @@ function formatDayLabel(isoDateString) {
 function DashboardRowTwoNewsVolumeOverview({ scriptsReady }) {
   const canvasRef = useRef(null)
   const chartRef = useRef(null)
-  const [articles, setArticles] = useState([])
+  const [savedByDay, setSavedByDay] = useState([])
+  const [totalSaved, setTotalSaved] = useState(0)
+  const [mysqlEnabled, setMysqlEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -55,9 +63,10 @@ function DashboardRowTwoNewsVolumeOverview({ scriptsReady }) {
     async function loadArticles() {
       setLoading(true)
       setError('')
+      setMysqlEnabled(true)
 
       try {
-        const response = await fetch(buildNewsApiUrl(), {
+        const response = await fetch(buildSavedByDayUrl(), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -70,11 +79,24 @@ function DashboardRowTwoNewsVolumeOverview({ scriptsReady }) {
         }
 
         const payload = await response.json()
-        setArticles(normalizeArticles(payload))
+        const normalizedPayload = normalizeSavedByDayPayload(payload)
+
+        setSavedByDay(normalizedPayload.items)
+        setTotalSaved(normalizedPayload.totalSaved)
+        setMysqlEnabled(normalizedPayload.enabled)
+
+        if (!normalizedPayload.enabled && normalizedPayload.message) {
+          setError(normalizedPayload.message)
+        }
+
+        if (normalizedPayload.error) {
+          setError(normalizedPayload.error)
+        }
       } catch (requestError) {
         if (requestError.name !== 'AbortError') {
           setError(requestError.message || 'Unable to load chart data.')
-          setArticles([])
+          setSavedByDay([])
+          setTotalSaved(0)
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -94,29 +116,19 @@ function DashboardRowTwoNewsVolumeOverview({ scriptsReady }) {
     const dayKeys = buildRecentDayKeys(NEWS_CHART_DAYS)
     const countsByDay = new Map(dayKeys.map((key) => [key, 0]))
 
-    articles.forEach((article) => {
-      if (!article?.published_datetime_utc) {
+    savedByDay.forEach((item) => {
+      if (!item?.date || !countsByDay.has(item.date)) {
         return
       }
 
-      const publishedDate = new Date(article.published_datetime_utc)
-      if (Number.isNaN(publishedDate.getTime())) {
-        return
-      }
-
-      const dayKey = publishedDate.toISOString().slice(0, 10)
-      if (!countsByDay.has(dayKey)) {
-        return
-      }
-
-      countsByDay.set(dayKey, (countsByDay.get(dayKey) || 0) + 1)
+      countsByDay.set(item.date, Number(item.count || 0))
     })
 
     return {
       labels: dayKeys.map((key) => formatDayLabel(key)),
       values: dayKeys.map((key) => countsByDay.get(key) || 0),
     }
-  }, [articles])
+  }, [savedByDay])
 
   useEffect(() => {
     const chartApi = window.Chart
@@ -226,8 +238,6 @@ function DashboardRowTwoNewsVolumeOverview({ scriptsReady }) {
     }
   }, [chartData.labels, chartData.values, error, loading, scriptsReady])
 
-  const totalArticles = articles.length
-
   return (
     <div className="col-xl-8 col-lg-7">
       <div className="card shadow mb-4">
@@ -236,7 +246,7 @@ function DashboardRowTwoNewsVolumeOverview({ scriptsReady }) {
           <DashboardCardMenu menuId="newsVolumeDropdownMenu" />
         </div>
         <div className="card-body">
-          <div className="small text-gray-500 mb-3">Daily article count from cached API JSON (last 7 days)</div>
+          <div className="small text-gray-500 mb-3">Daily article count by save date in MySQL (last 7 days)</div>
           {error ? (
             <div className="alert alert-warning mb-0" role="alert">
               {error}
@@ -247,7 +257,11 @@ function DashboardRowTwoNewsVolumeOverview({ scriptsReady }) {
                 <canvas ref={canvasRef}></canvas>
               </div>
               <div className="mt-3 small text-gray-600">
-                {loading ? 'Loading chart data...' : `${totalArticles} articles in source feed`}
+                {loading
+                  ? 'Loading chart data...'
+                  : mysqlEnabled
+                    ? `${new Intl.NumberFormat('en-US').format(totalSaved)} articles saved in the last 7 days`
+                    : 'MySQL not configured'}
               </div>
             </>
           )}

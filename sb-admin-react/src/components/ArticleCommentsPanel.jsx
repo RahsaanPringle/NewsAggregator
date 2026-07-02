@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import CommentComposerForm from './CommentComposerForm'
-import { setCurrentCommentUserId } from '../utils/commentUserSession'
+import { getCurrentCommentUserId, setCurrentCommentUser } from '../utils/commentUserSession'
 
 const MYSQL_API_BASE_URL = String(import.meta.env.VITE_NEWS_API_BASE_URL || '').trim().replace(/\/+$/, '')
 
@@ -99,6 +99,34 @@ function ArticleCommentsPanel({
   const [locationStatus, setLocationStatus] = useState('')
   const [replyTarget, setReplyTarget] = useState(null)
 
+  async function ensureCommentUserId() {
+    const existingCommentUserId = getCurrentCommentUserId()
+    if (existingCommentUserId) {
+      return existingCommentUserId
+    }
+
+    const response = await fetch(buildMysqlApiUrl('/api/comment-users/random'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Comment user request failed with status ${response.status}`)
+    }
+
+    const payload = await response.json()
+    const normalizedId = Number(payload?.id || 0)
+
+    if (!Number.isInteger(normalizedId) || normalizedId <= 0) {
+      throw new Error('Comment user response was missing a valid id.')
+    }
+
+    setCurrentCommentUser(payload)
+    return normalizedId
+  }
+
   useEffect(() => {
     const abortController = new AbortController()
 
@@ -176,6 +204,8 @@ function ArticleCommentsPanel({
     setLocationStatus('')
 
     try {
+      const commentUserId = await ensureCommentUserId()
+
       let location = null
       if (consentLocation) {
         location = await getCurrentLocation()
@@ -194,6 +224,7 @@ function ArticleCommentsPanel({
         body: JSON.stringify({
           body: trimmedBody,
           parent_comment_id: replyTarget?.id ?? null,
+          comment_user_id: commentUserId,
           consent: {
             ipAddress: consentIpAddress,
             location: consentLocation,
@@ -207,7 +238,18 @@ function ArticleCommentsPanel({
       }
 
       const createdComment = await response.json()
-      setCurrentCommentUserId(createdComment?.user?.id)
+      setCurrentCommentUser(createdComment?.user)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('comment-message-created', {
+            detail: {
+              recipientCommentUserId: Number(replyTarget?.user?.id || 0) || null,
+              senderCommentUserId: Number(createdComment?.user?.id || 0) || null,
+              articleHash,
+            },
+          }),
+        )
+      }
       setComments((previousState) => [...previousState, createdComment])
       onCommentCreated?.(createdComment)
       setBody('')

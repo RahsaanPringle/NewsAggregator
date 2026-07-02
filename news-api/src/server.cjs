@@ -404,6 +404,7 @@ app.post('/api/articles/:articleHash/comments', async (request, response) => {
   const parentCommentId = requestedParentCommentId && requestedParentCommentId > 0
     ? requestedParentCommentId
     : null
+  const requestedCommentUserId = normalizeInteger(request.body?.comment_user_id)
 
   try {
     await ensureSchema()
@@ -436,16 +437,29 @@ app.post('/api/articles/:articleHash/comments', async (request, response) => {
       parentCommentRow = parentRows[0]
     }
 
-    const location = normalizeLocationInput(request.body?.location)
-    const consent = normalizeConsentInput(request.body?.consent)
-    const requesterIp = getRequestIpAddress(request)
-    const signalHash = computeCommentUserSignalHash(requesterIp, consent.location ? location : null)
-    const userId = await findOrCreateCommentUser({
-      signalHash,
-      requesterIp,
-      location,
-      consent,
-    })
+    let userId = null
+
+    if (requestedCommentUserId && requestedCommentUserId > 0) {
+      const requestedCommentUser = await findCommentUserById(requestedCommentUserId)
+      if (!requestedCommentUser) {
+        response.status(400).json({ error: 'comment_user_id was not found.' })
+        return
+      }
+
+      userId = requestedCommentUser.id
+    } else {
+      const location = normalizeLocationInput(request.body?.location)
+      const consent = normalizeConsentInput(request.body?.consent)
+      const requesterIp = getRequestIpAddress(request)
+      const signalHash = computeCommentUserSignalHash(requesterIp, consent.location ? location : null)
+
+      userId = await findOrCreateCommentUser({
+        signalHash,
+        requesterIp,
+        location,
+        consent,
+      })
+    }
 
     const [result] = await pool.execute(
       `INSERT INTO article_comments (
@@ -492,6 +506,82 @@ app.post('/api/articles/:articleHash/comments', async (request, response) => {
     response.status(201).json(normalizeCommentRow(rows[0]))
   } catch (error) {
     response.status(502).json({ error: error.message || 'Unable to create comment.' })
+  }
+})
+
+app.post('/api/comment-users/random', async (_request, response) => {
+  if (!isMysqlConfigured()) {
+    response.status(503).json({ error: 'MySQL is not configured.' })
+    return
+  }
+
+  try {
+    await ensureSchema()
+
+    const randomUserProfile = await fetchRandomUserProfile()
+    const profile = projectRandomUserProfile(randomUserProfile, null)
+    const thumbnail = await downloadThumbnailAsset(profile.picture?.thumbnail)
+    const displayName = buildDisplayName(profile)
+    const signalHash = crypto.createHash('sha256').update(crypto.randomUUID()).digest('hex')
+
+    const [result] = await pool.execute(
+      `INSERT INTO comment_users (
+        signal_hash,
+        profile_source,
+        display_name,
+        username,
+        email_placeholder,
+        gender,
+        nat,
+        randomuser_login_uuid,
+        ip_address_value,
+        ip_address_consent,
+        location_consent,
+        location_json,
+        profile_thumbnail_url,
+        profile_thumbnail_mime,
+        profile_thumbnail_blob,
+        raw_profile_json
+      ) VALUES (?, 'randomuser', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        signalHash,
+        displayName,
+        normalizeNullableString(profile.login?.username, 191),
+        normalizeNullableString(profile.email, 191),
+        normalizeNullableString(profile.gender, 32),
+        normalizeNullableString(profile.nat, 16),
+        normalizeNullableString(profile.login?.uuid, 36),
+        null,
+        0,
+        0,
+        null,
+        normalizeNullableString(profile.picture?.thumbnail),
+        thumbnail.mimeType,
+        thumbnail.buffer,
+        JSON.stringify(profile),
+      ],
+    )
+
+    const [rows] = await pool.query(
+      `SELECT
+        id,
+        display_name,
+        username,
+        email_placeholder,
+        gender,
+        nat,
+        created_at,
+        profile_thumbnail_mime,
+        profile_thumbnail_blob
+      FROM comment_users
+      WHERE id = ?
+      LIMIT 1`,
+      [result.insertId],
+    )
+
+    response.status(201).json(normalizeCommentUserRow(rows[0]))
+  } catch (error) {
+    response.status(502).json({ error: error.message || 'Unable to create random comment user.' })
   }
 })
 
@@ -579,6 +669,10 @@ app.get('/api/comment-users/:commentUserId', async (request, response) => {
         id,
         display_name,
         username,
+        email_placeholder,
+        gender,
+        nat,
+        created_at,
         profile_thumbnail_mime,
         profile_thumbnail_blob
       FROM comment_users
@@ -696,6 +790,11 @@ async function findArticleByHash(articleHash) {
     [articleHash],
   )
 
+  return rows[0] ?? null
+}
+
+async function findCommentUserById(commentUserId) {
+  const [rows] = await pool.query('SELECT id FROM comment_users WHERE id = ? LIMIT 1', [commentUserId])
   return rows[0] ?? null
 }
 
@@ -914,6 +1013,10 @@ function normalizeCommentUserRow(row) {
     id: row.id,
     display_name: row.display_name,
     username: row.username,
+    email_placeholder: row.email_placeholder,
+    gender: row.gender,
+    nat: row.nat,
+    created_at: row.created_at,
     profile_thumbnail_data_url: toDataUrl(row.profile_thumbnail_mime, row.profile_thumbnail_blob),
   }
 }
