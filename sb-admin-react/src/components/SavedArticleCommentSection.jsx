@@ -54,6 +54,22 @@ function SavedArticleCommentSection({
                 </div>
               </div>
             </div>
+            {featuredComment.id ? (
+              <button
+                type="button"
+                className="btn btn-link btn-sm p-0"
+                onClick={() => {
+                  onOpenComment({
+                    articleHash,
+                    articleTitle,
+                    startComposerOpen: false,
+                    replyCommentId: featuredComment.id,
+                  })
+                }}
+              >
+                Reply
+              </button>
+            ) : null}
           </div>
           <p className="mb-0 text-gray-800">{featuredComment.body}</p>
         </article>
@@ -65,6 +81,7 @@ function SavedArticleCommentSection({
             articleHash={selectedCommentArticle.articleHash}
             articleTitle={selectedCommentArticle.articleTitle}
             startComposerOpen={selectedCommentArticle.startComposerOpen}
+            initialReplyCommentId={selectedCommentArticle.replyCommentId ?? null}
             onCommentCreated={(createdComment) => onCommentCreated(selectedCommentArticle.articleHash, createdComment)}
             onClose={onCloseComment}
           />

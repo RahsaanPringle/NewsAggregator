@@ -208,6 +208,78 @@ const openApiSpec = {
         },
       },
     },
+    '/api/comment-users/random': {
+      post: {
+        tags: ['Comments'],
+        summary: 'Create a random comment user profile',
+        responses: {
+          201: {
+            description: 'Created random comment user',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/CommentUserSummary' },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/api/comment-users/{commentUserId}': {
+      get: {
+        tags: ['Comments'],
+        summary: 'Get one comment user profile summary',
+        parameters: [
+          {
+            name: 'commentUserId',
+            in: 'path',
+            required: true,
+            schema: { type: 'integer', minimum: 1 },
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Comment user summary',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/CommentUserSummary' },
+              },
+            },
+          },
+          404: {
+            description: 'Comment user not found',
+          },
+        },
+      },
+    },
+    '/api/comment-messages/inbox': {
+      get: {
+        tags: ['Comments'],
+        summary: 'Get inbox reply messages for one comment user',
+        parameters: [
+          {
+            name: 'commentUserId',
+            in: 'query',
+            required: true,
+            schema: { type: 'integer', minimum: 1 },
+          },
+          {
+            name: 'limit',
+            in: 'query',
+            schema: { type: 'integer', minimum: 1, maximum: 50, default: 10 },
+          },
+        ],
+        responses: {
+          200: {
+            description: 'Inbox message list',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/CommentInboxResponse' },
+              },
+            },
+          },
+        },
+      },
+    },
     '/openapi.json': {
       get: {
         tags: ['System'],
@@ -348,8 +420,63 @@ const openApiSpec = {
         properties: {
           body: { type: 'string' },
           parent_comment_id: { type: 'integer', nullable: true },
+          comment_user_id: { type: 'integer', nullable: true },
           consent: { $ref: '#/components/schemas/CommentConsentInput' },
           location: { $ref: '#/components/schemas/CommentLocationInput' },
+        },
+      },
+      CommentUserSummary: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer' },
+          display_name: { type: 'string' },
+          username: { type: 'string', nullable: true },
+          email_placeholder: { type: 'string', nullable: true },
+          gender: { type: 'string', nullable: true },
+          nat: { type: 'string', nullable: true },
+          created_at: { type: 'string', nullable: true },
+          profile_thumbnail_data_url: { type: 'string', nullable: true },
+        },
+      },
+      CommentInboxSender: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer' },
+          display_name: { type: 'string' },
+          username: { type: 'string', nullable: true },
+          profile_thumbnail_data_url: { type: 'string', nullable: true },
+        },
+      },
+      CommentInboxItem: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer' },
+          created_at: { type: 'string' },
+          read_at: { type: 'string', nullable: true },
+          parent_comment_id: { type: 'integer' },
+          reply_comment_id: { type: 'integer' },
+          article: {
+            type: 'object',
+            properties: {
+              article_hash: { type: 'string' },
+              title: { type: 'string' },
+            },
+          },
+          parent_comment_excerpt: { type: 'string' },
+          reply_comment_excerpt: { type: 'string' },
+          sender: { $ref: '#/components/schemas/CommentInboxSender' },
+        },
+      },
+      CommentInboxResponse: {
+        type: 'object',
+        properties: {
+          comment_user_id: { type: 'integer' },
+          total: { type: 'integer' },
+          unread_total: { type: 'integer' },
+          items: {
+            type: 'array',
+            items: { $ref: '#/components/schemas/CommentInboxItem' },
+          },
         },
       },
       CommentUserProfile: {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import CommentComposerForm from './CommentComposerForm'
+import { getCurrentCommentUserId, setCurrentCommentUser } from '../utils/commentUserSession'
 
 const MYSQL_API_BASE_URL = String(import.meta.env.VITE_NEWS_API_BASE_URL || '').trim().replace(/\/+$/, '')
 
@@ -78,7 +79,14 @@ function getCurrentLocation() {
   })
 }
 
-function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startComposerOpen = false, onCommentCreated }) {
+function ArticleCommentsPanel({
+  articleHash,
+  articleTitle,
+  onClose,
+  startComposerOpen = false,
+  initialReplyCommentId = null,
+  onCommentCreated,
+}) {
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -90,6 +98,34 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
   const [consentLocation, setConsentLocation] = useState(false)
   const [locationStatus, setLocationStatus] = useState('')
   const [replyTarget, setReplyTarget] = useState(null)
+
+  async function ensureCommentUserId() {
+    const existingCommentUserId = getCurrentCommentUserId()
+    if (existingCommentUserId) {
+      return existingCommentUserId
+    }
+
+    const response = await fetch(buildMysqlApiUrl('/api/comment-users/random'), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Comment user request failed with status ${response.status}`)
+    }
+
+    const payload = await response.json()
+    const normalizedId = Number(payload?.id || 0)
+
+    if (!Number.isInteger(normalizedId) || normalizedId <= 0) {
+      throw new Error('Comment user response was missing a valid id.')
+    }
+
+    setCurrentCommentUser(payload)
+    return normalizedId
+  }
 
   useEffect(() => {
     const abortController = new AbortController()
@@ -136,6 +172,23 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
     setReplyTarget(null)
   }, [articleHash, startComposerOpen])
 
+  useEffect(() => {
+    if (!initialReplyCommentId) {
+      return
+    }
+
+    const targetComment = comments.find((comment) => comment.id === initialReplyCommentId)
+    if (!targetComment || replyTarget?.id === targetComment.id) {
+      return
+    }
+
+    setSubmitError('')
+    setLocationStatus('')
+    setBody('')
+    setShowComposer(false)
+    setReplyTarget(targetComment)
+  }, [comments, initialReplyCommentId, replyTarget?.id])
+
   const threadedComments = buildCommentThread(comments)
 
   async function handleSubmit(event) {
@@ -151,6 +204,8 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
     setLocationStatus('')
 
     try {
+      const commentUserId = await ensureCommentUserId()
+
       let location = null
       if (consentLocation) {
         location = await getCurrentLocation()
@@ -169,6 +224,7 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
         body: JSON.stringify({
           body: trimmedBody,
           parent_comment_id: replyTarget?.id ?? null,
+          comment_user_id: commentUserId,
           consent: {
             ipAddress: consentIpAddress,
             location: consentLocation,
@@ -182,6 +238,18 @@ function ArticleCommentsPanel({ articleHash, articleTitle, onClose, startCompose
       }
 
       const createdComment = await response.json()
+      setCurrentCommentUser(createdComment?.user)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('comment-message-created', {
+            detail: {
+              recipientCommentUserId: Number(replyTarget?.user?.id || 0) || null,
+              senderCommentUserId: Number(createdComment?.user?.id || 0) || null,
+              articleHash,
+            },
+          }),
+        )
+      }
       setComments((previousState) => [...previousState, createdComment])
       onCommentCreated?.(createdComment)
       setBody('')

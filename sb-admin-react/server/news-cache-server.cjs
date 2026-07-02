@@ -261,6 +261,92 @@ server.get('/api/mysql/articles/collected-today', async (_request, response) => 
   }
 })
 
+server.get('/api/mysql/articles/saved-by-day', async (request, response) => {
+  const mysqlConfig = getMysqlConfig()
+  const requestedDays = Number(request.query.days || 7)
+  const days = Math.max(1, Math.min(Number.isFinite(requestedDays) ? requestedDays : 7, 31))
+  const endpointPath = normalizeEndpointPath(request.query.endpointPath)
+
+  if (!mysqlConfig) {
+    response.status(200).json({
+      enabled: false,
+      days,
+      totalSaved: 0,
+      items: [],
+      message:
+        'MySQL is not configured. Set MYSQL_HOST, MYSQL_DATABASE, MYSQL_USER, and MYSQL_PASSWORD in your environment.',
+    })
+    return
+  }
+
+  try {
+    const pool = await getMysqlPool(mysqlConfig)
+    await ensureMySqlArticleTable(pool)
+
+    const endpointFilterSql = endpointPath ? 'AND endpoint_path = ?' : ''
+    const queryParams = [days]
+
+    if (endpointPath) {
+      queryParams.push(endpointPath)
+    }
+
+    const [rows] = await pool.query(
+      `SELECT
+         DATE(created_at) AS saved_date,
+         COUNT(*) AS saved_count
+       FROM news_articles
+       WHERE created_at >= UTC_DATE() - INTERVAL (? - 1) DAY
+         AND created_at < UTC_DATE() + INTERVAL 1 DAY
+         ${endpointFilterSql}
+       GROUP BY DATE(created_at)
+       ORDER BY saved_date ASC`,
+      queryParams,
+    )
+
+    const countByDate = new Map()
+
+    rows.forEach((row) => {
+      const dateValue = row.saved_date ? new Date(row.saved_date) : null
+      if (!dateValue || Number.isNaN(dateValue.getTime())) {
+        return
+      }
+
+      const dayKey = dateValue.toISOString().slice(0, 10)
+      countByDate.set(dayKey, Number(row.saved_count || 0))
+    })
+
+    const items = []
+    const todayUtc = new Date()
+
+    for (let index = days - 1; index >= 0; index -= 1) {
+      const day = new Date(Date.UTC(todayUtc.getUTCFullYear(), todayUtc.getUTCMonth(), todayUtc.getUTCDate() - index))
+      const date = day.toISOString().slice(0, 10)
+      items.push({
+        date,
+        count: countByDate.get(date) || 0,
+      })
+    }
+
+    const totalSaved = items.reduce((sum, item) => sum + item.count, 0)
+
+    response.status(200).json({
+      enabled: true,
+      days,
+      endpointPath: endpointPath || null,
+      totalSaved,
+      items,
+    })
+  } catch (error) {
+    response.status(502).json({
+      enabled: false,
+      days,
+      totalSaved: 0,
+      items: [],
+      error: error.message || 'Unable to load saved article counts by day.',
+    })
+  }
+})
+
 server.get('/api/mysql/comments/revenue', async (_request, response) => {
   const mysqlConfig = getMysqlConfig()
 

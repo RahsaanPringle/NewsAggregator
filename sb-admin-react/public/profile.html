@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="Current user profile">
+  <meta name="author" content="">
+
+  <title>SB Admin 2 - Profile</title>
+
+  <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+  <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet">
+  <link href="css/sb-admin-2.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gradient-primary">
+  <div class="container">
+    <div class="card o-hidden border-0 shadow-lg my-5">
+      <div class="card-body p-0">
+        <div class="row">
+          <div class="col-lg-5 d-none d-lg-flex align-items-center justify-content-center bg-light">
+            <div class="text-center p-4">
+              <img id="profileAvatar" class="img-profile rounded-circle mb-3" src="img/undraw_profile.svg" alt="Profile avatar" style="width: 120px; height: 120px; object-fit: cover;">
+              <div class="small text-gray-600">Current Comment User</div>
+              <div class="h6 mb-0 text-gray-800" id="profileDisplayNameSide">Guest User</div>
+            </div>
+          </div>
+          <div class="col-lg-7">
+            <div class="p-5">
+              <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h4 text-gray-900 mb-0">Your Profile</h1>
+                <a href="/" class="btn btn-sm btn-outline-primary">Back to Dashboard</a>
+              </div>
+
+              <div id="profileStatus" class="alert alert-info" role="alert">
+                Loading current user profile...
+              </div>
+
+              <form class="user" id="profileForm">
+                <div class="form-group row">
+                  <div class="col-sm-6 mb-3 mb-sm-0">
+                    <label class="small text-gray-700" for="profileDisplayName">Display Name</label>
+                    <input type="text" class="form-control form-control-user" id="profileDisplayName" placeholder="Display Name" readonly>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="small text-gray-700" for="profileUsername">Username</label>
+                    <input type="text" class="form-control form-control-user" id="profileUsername" placeholder="Username" readonly>
+                  </div>
+                </div>
+
+                <div class="form-group row">
+                  <div class="col-sm-6 mb-3 mb-sm-0">
+                    <label class="small text-gray-700" for="profileUserId">User ID</label>
+                    <input type="text" class="form-control form-control-user" id="profileUserId" placeholder="User ID" readonly>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="small text-gray-700" for="profileEmail">Email Placeholder</label>
+                    <input type="text" class="form-control form-control-user" id="profileEmail" placeholder="Email Placeholder" readonly>
+                  </div>
+                </div>
+
+                <div class="form-group row">
+                  <div class="col-sm-6 mb-3 mb-sm-0">
+                    <label class="small text-gray-700" for="profileGender">Gender</label>
+                    <input type="text" class="form-control form-control-user" id="profileGender" placeholder="Gender" readonly>
+                  </div>
+                  <div class="col-sm-6">
+                    <label class="small text-gray-700" for="profileNationality">Nationality</label>
+                    <input type="text" class="form-control form-control-user" id="profileNationality" placeholder="Nationality" readonly>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="small text-gray-700" for="profileCreatedAt">Profile Created</label>
+                  <input type="text" class="form-control form-control-user" id="profileCreatedAt" placeholder="Profile Created" readonly>
+                </div>
+              </form>
+
+              <div class="small text-gray-500 mt-3">
+                This profile is generated from your comment identity and can be updated by posting comments from a different IP/location consent combination.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const COMMENT_USER_ID_KEY = 'news-comment-user-id'
+      const COMMENT_USER_SNAPSHOT_KEY = 'news-comment-user-snapshot'
+      const NEWS_API_BASE_URL_KEY = 'news-api-base-url'
+
+      const statusElement = document.getElementById('profileStatus')
+      const profileDisplayName = document.getElementById('profileDisplayName')
+      const profileDisplayNameSide = document.getElementById('profileDisplayNameSide')
+      const profileUsername = document.getElementById('profileUsername')
+      const profileUserId = document.getElementById('profileUserId')
+      const profileEmail = document.getElementById('profileEmail')
+      const profileGender = document.getElementById('profileGender')
+      const profileNationality = document.getElementById('profileNationality')
+      const profileCreatedAt = document.getElementById('profileCreatedAt')
+      const profileAvatar = document.getElementById('profileAvatar')
+
+      function normalizeInteger(value) {
+        const parsed = Number.parseInt(String(value || ''), 10)
+        return Number.isInteger(parsed) && parsed > 0 ? parsed : null
+      }
+
+      function buildApiUrl(path) {
+        const configuredBase = String(localStorage.getItem(NEWS_API_BASE_URL_KEY) || '').trim().replace(/\/+$/, '')
+        return configuredBase ? configuredBase + path : path
+      }
+
+      function setStatus(message, variant) {
+        statusElement.className = 'alert alert-' + variant
+        statusElement.textContent = message
+      }
+
+      function setInputValue(element, value) {
+        element.value = value || 'Not available'
+      }
+
+      function renderUser(user) {
+        if (!user || typeof user !== 'object') {
+          return
+        }
+
+        const displayName = user.display_name || 'Guest User'
+
+        setInputValue(profileDisplayName, displayName)
+        setInputValue(profileUsername, user.username)
+        setInputValue(profileUserId, String(user.id || ''))
+        setInputValue(profileEmail, user.email_placeholder)
+        setInputValue(profileGender, user.gender)
+        setInputValue(profileNationality, user.nat)
+        setInputValue(profileCreatedAt, formatDateTime(user.created_at))
+
+        profileDisplayNameSide.textContent = displayName
+        if (user.profile_thumbnail_data_url) {
+          profileAvatar.src = user.profile_thumbnail_data_url
+        }
+      }
+
+      function getStoredSnapshot() {
+        try {
+          const serializedValue = localStorage.getItem(COMMENT_USER_SNAPSHOT_KEY)
+          if (!serializedValue) {
+            return null
+          }
+
+          const parsedValue = JSON.parse(serializedValue)
+          return parsedValue && typeof parsedValue === 'object' ? parsedValue : null
+        } catch {
+          return null
+        }
+      }
+
+      function persistSnapshot(user) {
+        if (!user || typeof user !== 'object') {
+          return
+        }
+
+        localStorage.setItem(COMMENT_USER_SNAPSHOT_KEY, JSON.stringify(user))
+      }
+
+      function formatDateTime(value) {
+        if (!value) {
+          return ''
+        }
+
+        const parsed = new Date(value)
+        if (Number.isNaN(parsed.getTime())) {
+          return String(value)
+        }
+
+        return new Intl.DateTimeFormat('en-US', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        }).format(parsed)
+      }
+
+      async function loadProfile() {
+        const storedSnapshot = getStoredSnapshot()
+        if (storedSnapshot) {
+          renderUser(storedSnapshot)
+          setStatus('Showing current user from local storage.', 'info')
+        }
+
+        const commentUserId = normalizeInteger(localStorage.getItem(COMMENT_USER_ID_KEY))
+        if (!commentUserId) {
+          if (!storedSnapshot) {
+            setStatus('No current user found yet. Post a comment first, then reopen this page.', 'warning')
+          }
+          return
+        }
+
+        try {
+          const response = await fetch(buildApiUrl('/api/comment-users/' + commentUserId), {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          })
+
+          if (!response.ok) {
+            throw new Error('Profile request failed with status ' + response.status)
+          }
+
+          const user = await response.json()
+          renderUser(user)
+          persistSnapshot(user)
+
+          setStatus('Current user profile loaded successfully.', 'success')
+        } catch (error) {
+          if (!storedSnapshot) {
+            setStatus(error.message || 'Unable to load current user profile.', 'danger')
+          } else {
+            setStatus('Using locally stored profile. Live refresh is unavailable right now.', 'warning')
+          }
+        }
+      }
+
+      loadProfile()
+    })()
+  </script>
+
+  <script src="vendor/jquery/jquery.min.js"></script>
+  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+  <script src="js/sb-admin-2.min.js"></script>
+</body>
+
+</html>

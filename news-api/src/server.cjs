@@ -99,6 +99,39 @@ const CREATE_ARTICLE_COMMENTS_TABLE_SQL = `
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 `
 
+const CREATE_COMMENT_MESSAGES_TABLE_SQL = `
+  CREATE TABLE IF NOT EXISTS comment_messages (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    recipient_comment_user_id BIGINT UNSIGNED NOT NULL,
+    sender_comment_user_id BIGINT UNSIGNED NOT NULL,
+    article_id INT UNSIGNED NOT NULL,
+    parent_comment_id BIGINT UNSIGNED NOT NULL,
+    reply_comment_id BIGINT UNSIGNED NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    read_at TIMESTAMP NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_comment_messages_reply_comment_id (reply_comment_id),
+    KEY idx_comment_messages_recipient_created_at (recipient_comment_user_id, created_at),
+    KEY idx_comment_messages_sender_comment_user_id (sender_comment_user_id),
+    KEY idx_comment_messages_article_id (article_id),
+    CONSTRAINT fk_comment_messages_recipient
+      FOREIGN KEY (recipient_comment_user_id) REFERENCES comment_users(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_comment_messages_sender
+      FOREIGN KEY (sender_comment_user_id) REFERENCES comment_users(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_comment_messages_article
+      FOREIGN KEY (article_id) REFERENCES news_articles(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_comment_messages_parent_comment
+      FOREIGN KEY (parent_comment_id) REFERENCES article_comments(id)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_comment_messages_reply_comment
+      FOREIGN KEY (reply_comment_id) REFERENCES article_comments(id)
+        ON DELETE CASCADE
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+`
+
 app.disable('x-powered-by')
 app.use(helmet())
 app.use(cors({ origin: CORS_ORIGIN }))
@@ -371,6 +404,7 @@ app.post('/api/articles/:articleHash/comments', async (request, response) => {
   const parentCommentId = requestedParentCommentId && requestedParentCommentId > 0
     ? requestedParentCommentId
     : null
+  const requestedCommentUserId = normalizeInteger(request.body?.comment_user_id)
 
   try {
     await ensureSchema()
@@ -381,9 +415,11 @@ app.post('/api/articles/:articleHash/comments', async (request, response) => {
       return
     }
 
+    let parentCommentRow = null
     if (parentCommentId) {
       const [parentRows] = await pool.query(
         `SELECT id
+              , comment_user_id
          FROM article_comments
          WHERE id = ?
            AND article_id = ?
@@ -397,18 +433,33 @@ app.post('/api/articles/:articleHash/comments', async (request, response) => {
         response.status(400).json({ error: 'Parent comment was not found for this article.' })
         return
       }
+
+      parentCommentRow = parentRows[0]
     }
 
-    const location = normalizeLocationInput(request.body?.location)
-    const consent = normalizeConsentInput(request.body?.consent)
-    const requesterIp = getRequestIpAddress(request)
-    const signalHash = computeCommentUserSignalHash(requesterIp, consent.location ? location : null)
-    const userId = await findOrCreateCommentUser({
-      signalHash,
-      requesterIp,
-      location,
-      consent,
-    })
+    let userId = null
+
+    if (requestedCommentUserId && requestedCommentUserId > 0) {
+      const requestedCommentUser = await findCommentUserById(requestedCommentUserId)
+      if (!requestedCommentUser) {
+        response.status(400).json({ error: 'comment_user_id was not found.' })
+        return
+      }
+
+      userId = requestedCommentUser.id
+    } else {
+      const location = normalizeLocationInput(request.body?.location)
+      const consent = normalizeConsentInput(request.body?.consent)
+      const requesterIp = getRequestIpAddress(request)
+      const signalHash = computeCommentUserSignalHash(requesterIp, consent.location ? location : null)
+
+      userId = await findOrCreateCommentUser({
+        signalHash,
+        requesterIp,
+        location,
+        consent,
+      })
+    }
 
     const [result] = await pool.execute(
       `INSERT INTO article_comments (
@@ -420,6 +471,16 @@ app.post('/api/articles/:articleHash/comments', async (request, response) => {
       ) VALUES (?, ?, ?, ?, 'published')`,
       [articleRow.id, parentCommentId, userId, body],
     )
+
+    if (parentCommentRow && Number(parentCommentRow.comment_user_id) !== Number(userId)) {
+      await createCommentReplyMessage({
+        recipientCommentUserId: parentCommentRow.comment_user_id,
+        senderCommentUserId: userId,
+        articleId: articleRow.id,
+        parentCommentId: parentCommentRow.id,
+        replyCommentId: result.insertId,
+      })
+    }
 
     const [rows] = await pool.query(
       `SELECT
@@ -448,6 +509,189 @@ app.post('/api/articles/:articleHash/comments', async (request, response) => {
   }
 })
 
+app.post('/api/comment-users/random', async (_request, response) => {
+  if (!isMysqlConfigured()) {
+    response.status(503).json({ error: 'MySQL is not configured.' })
+    return
+  }
+
+  try {
+    await ensureSchema()
+
+    const randomUserProfile = await fetchRandomUserProfile()
+    const profile = projectRandomUserProfile(randomUserProfile, null)
+    const thumbnail = await downloadThumbnailAsset(profile.picture?.thumbnail)
+    const displayName = buildDisplayName(profile)
+    const signalHash = crypto.createHash('sha256').update(crypto.randomUUID()).digest('hex')
+
+    const [result] = await pool.execute(
+      `INSERT INTO comment_users (
+        signal_hash,
+        profile_source,
+        display_name,
+        username,
+        email_placeholder,
+        gender,
+        nat,
+        randomuser_login_uuid,
+        ip_address_value,
+        ip_address_consent,
+        location_consent,
+        location_json,
+        profile_thumbnail_url,
+        profile_thumbnail_mime,
+        profile_thumbnail_blob,
+        raw_profile_json
+      ) VALUES (?, 'randomuser', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        signalHash,
+        displayName,
+        normalizeNullableString(profile.login?.username, 191),
+        normalizeNullableString(profile.email, 191),
+        normalizeNullableString(profile.gender, 32),
+        normalizeNullableString(profile.nat, 16),
+        normalizeNullableString(profile.login?.uuid, 36),
+        null,
+        0,
+        0,
+        null,
+        normalizeNullableString(profile.picture?.thumbnail),
+        thumbnail.mimeType,
+        thumbnail.buffer,
+        JSON.stringify(profile),
+      ],
+    )
+
+    const [rows] = await pool.query(
+      `SELECT
+        id,
+        display_name,
+        username,
+        email_placeholder,
+        gender,
+        nat,
+        created_at,
+        profile_thumbnail_mime,
+        profile_thumbnail_blob
+      FROM comment_users
+      WHERE id = ?
+      LIMIT 1`,
+      [result.insertId],
+    )
+
+    response.status(201).json(normalizeCommentUserRow(rows[0]))
+  } catch (error) {
+    response.status(502).json({ error: error.message || 'Unable to create random comment user.' })
+  }
+})
+
+app.get('/api/comment-messages/inbox', async (request, response) => {
+  if (!isMysqlConfigured()) {
+    response.status(503).json({ error: 'MySQL is not configured.' })
+    return
+  }
+
+  const commentUserId = normalizeInteger(request.query.commentUserId)
+  if (!commentUserId || commentUserId <= 0) {
+    response.status(400).json({ error: 'Query parameter commentUserId must be a positive integer.' })
+    return
+  }
+
+  const limit = clampInteger(request.query.limit, 10, 1, 50)
+
+  try {
+    await ensureSchema()
+
+    const [rows] = await pool.query(
+      `SELECT
+        m.id,
+        m.created_at,
+        m.read_at,
+        m.parent_comment_id,
+        m.reply_comment_id,
+        a.article_hash,
+        a.title AS article_title,
+        parent_comment.body AS parent_comment_body,
+        reply_comment.body AS reply_comment_body,
+        sender.id AS sender_user_id,
+        sender.display_name AS sender_display_name,
+        sender.username AS sender_username,
+        sender.profile_thumbnail_mime AS sender_profile_thumbnail_mime,
+        sender.profile_thumbnail_blob AS sender_profile_thumbnail_blob
+      FROM comment_messages m
+      INNER JOIN news_articles a ON a.id = m.article_id
+      INNER JOIN article_comments parent_comment ON parent_comment.id = m.parent_comment_id
+      INNER JOIN article_comments reply_comment ON reply_comment.id = m.reply_comment_id
+      INNER JOIN comment_users sender ON sender.id = m.sender_comment_user_id
+      WHERE m.recipient_comment_user_id = ?
+      ORDER BY m.created_at DESC
+      LIMIT ?`,
+      [commentUserId, limit],
+    )
+
+    const [countRows] = await pool.query(
+      `SELECT
+        COUNT(*) AS total,
+        SUM(CASE WHEN read_at IS NULL THEN 1 ELSE 0 END) AS unread_total
+      FROM comment_messages
+      WHERE recipient_comment_user_id = ?`,
+      [commentUserId],
+    )
+
+    response.json({
+      comment_user_id: commentUserId,
+      total: Number(countRows[0]?.total || 0),
+      unread_total: Number(countRows[0]?.unread_total || 0),
+      items: rows.map(normalizeCommentMessageRow),
+    })
+  } catch (error) {
+    response.status(502).json({ error: error.message || 'Unable to load inbox messages.' })
+  }
+})
+
+app.get('/api/comment-users/:commentUserId', async (request, response) => {
+  if (!isMysqlConfigured()) {
+    response.status(503).json({ error: 'MySQL is not configured.' })
+    return
+  }
+
+  const commentUserId = normalizeInteger(request.params.commentUserId)
+  if (!commentUserId || commentUserId <= 0) {
+    response.status(400).json({ error: 'commentUserId must be a positive integer.' })
+    return
+  }
+
+  try {
+    await ensureSchema()
+
+    const [rows] = await pool.query(
+      `SELECT
+        id,
+        display_name,
+        username,
+        email_placeholder,
+        gender,
+        nat,
+        created_at,
+        profile_thumbnail_mime,
+        profile_thumbnail_blob
+      FROM comment_users
+      WHERE id = ?
+      LIMIT 1`,
+      [commentUserId],
+    )
+
+    if (rows.length === 0) {
+      response.status(404).json({ error: 'Comment user not found.' })
+      return
+    }
+
+    response.json(normalizeCommentUserRow(rows[0]))
+  } catch (error) {
+    response.status(502).json({ error: error.message || 'Unable to load comment user.' })
+  }
+})
+
 app.use((error, _request, response, _next) => {
   response.status(500).json({ error: error.message || 'Unexpected server error.' })
 })
@@ -461,7 +705,28 @@ async function ensureSchema() {
   await pool.query(CREATE_NEWS_ARTICLES_TABLE_SQL)
   await pool.query(CREATE_COMMENT_USERS_TABLE_SQL)
   await pool.query(CREATE_ARTICLE_COMMENTS_TABLE_SQL)
+  await pool.query(CREATE_COMMENT_MESSAGES_TABLE_SQL)
   await ensureArticleCommentsReplySchema()
+}
+
+async function createCommentReplyMessage({
+  recipientCommentUserId,
+  senderCommentUserId,
+  articleId,
+  parentCommentId,
+  replyCommentId,
+}) {
+  await pool.execute(
+    `INSERT INTO comment_messages (
+      recipient_comment_user_id,
+      sender_comment_user_id,
+      article_id,
+      parent_comment_id,
+      reply_comment_id
+    ) VALUES (?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE id = id`,
+    [recipientCommentUserId, senderCommentUserId, articleId, parentCommentId, replyCommentId],
+  )
 }
 
 async function ensureArticleCommentsReplySchema() {
@@ -525,6 +790,11 @@ async function findArticleByHash(articleHash) {
     [articleHash],
   )
 
+  return rows[0] ?? null
+}
+
+async function findCommentUserById(commentUserId) {
+  const [rows] = await pool.query('SELECT id FROM comment_users WHERE id = ? LIMIT 1', [commentUserId])
   return rows[0] ?? null
 }
 
@@ -706,6 +976,58 @@ function normalizeCommentRow(row) {
       profile_thumbnail_data_url: toDataUrl(row.profile_thumbnail_mime, row.profile_thumbnail_blob),
     },
   }
+}
+
+function normalizeCommentMessageRow(row) {
+  if (!row) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    created_at: row.created_at,
+    read_at: row.read_at,
+    parent_comment_id: row.parent_comment_id,
+    reply_comment_id: row.reply_comment_id,
+    article: {
+      article_hash: row.article_hash,
+      title: row.article_title,
+    },
+    parent_comment_excerpt: buildMessageExcerpt(row.parent_comment_body),
+    reply_comment_excerpt: buildMessageExcerpt(row.reply_comment_body),
+    sender: {
+      id: row.sender_user_id,
+      display_name: row.sender_display_name,
+      username: row.sender_username,
+      profile_thumbnail_data_url: toDataUrl(row.sender_profile_thumbnail_mime, row.sender_profile_thumbnail_blob),
+    },
+  }
+}
+
+function normalizeCommentUserRow(row) {
+  if (!row) {
+    return null
+  }
+
+  return {
+    id: row.id,
+    display_name: row.display_name,
+    username: row.username,
+    email_placeholder: row.email_placeholder,
+    gender: row.gender,
+    nat: row.nat,
+    created_at: row.created_at,
+    profile_thumbnail_data_url: toDataUrl(row.profile_thumbnail_mime, row.profile_thumbnail_blob),
+  }
+}
+
+function buildMessageExcerpt(value) {
+  const normalized = normalizeNullableString(value)
+  if (!normalized) {
+    return ''
+  }
+
+  return normalized.length > 180 ? `${normalized.slice(0, 177)}...` : normalized
 }
 
 function getRequestIpAddress(request) {
