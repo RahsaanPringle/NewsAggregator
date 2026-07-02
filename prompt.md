@@ -1,4 +1,8 @@
-I want to start a new branch to change how the 'Message Center' element works in `sb-admin-react\src\markup\topbar.html`.
+I would like to add a page to the 'sb-admin-react' project to view and edit the PBIs in the repo.
 
-- If one user responnds to another, that's considered a "message", and it needs to be stored in the database, and the 'message center' component needs to show any messages sent to the current user.
-If the current user has no messages, the message center button should be disabled.
+For reference:
+
+- https://github.com/users/RahsaanPringle/projects/1/views/1
+- https://github.com/RahsaanPringle/NewsAggregator/issues/2
+
+The display page will look similar to the project page at 'http://localhost:5173/', but it will not have the side navigation or sections, just the work items as cards. We're not ready to start serious coding yet. Let's just get an html page with an explanation of how it can be done so I can get a good idea of what we're doing.

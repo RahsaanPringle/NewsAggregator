@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="Preview page for Product Backlog Items in NewsAggregator">
+  <meta name="author" content="">
+  <title>NewsAggregator - PBI Preview</title>
+
+  <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+  <link href="https://fonts.googleapis.com/css?family=Nunito:200,300,400,600,700,800,900" rel="stylesheet">
+  <link href="css/sb-admin-2.min.css" rel="stylesheet">
+
+  <style>
+    .pbi-board {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .pbi-meta {
+      font-size: 0.85rem;
+      color: #858796;
+    }
+
+    .pbi-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #2e2f37;
+      line-height: 1.35;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 99px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .pill-backlog { background: #e8f0fe; color: #235ecf; }
+    .pill-progress { background: #fff4df; color: #a66a00; }
+    .pill-ready { background: #e8f7ee; color: #1f7a41; }
+
+    .signal {
+      font-size: 0.8rem;
+      margin-right: 0.4rem;
+    }
+
+    .how-step {
+      border-left: 4px solid #4e73df;
+      padding: 0.75rem 0.9rem;
+      background: #f8f9fc;
+      border-radius: 0.35rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .auth-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .auth-card {
+      border: 1px solid #e3e6f0;
+      border-radius: 0.35rem;
+      padding: 1rem;
+      background: #fff;
+    }
+
+    .auth-card h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.6rem;
+      color: #2e2f37;
+    }
+
+    .auth-list {
+      padding-left: 1rem;
+      margin-bottom: 0;
+      color: #5a5c69;
+      font-size: 0.88rem;
+    }
+
+    pre {
+      background: #1f2430;
+      color: #e6e9ef;
+      border-radius: 0.4rem;
+      padding: 0.9rem;
+      white-space: pre-wrap;
+      font-size: 0.82rem;
+      margin: 0;
+    }
+  </style>
+</head>
+<body id="page-top" class="bg-light">
+  <div id="wrapper">
+    <div id="content-wrapper" class="d-flex flex-column">
+      <div id="content">
+        <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+          <a class="navbar-brand font-weight-bold text-primary" href="/">NewsAggregator</a>
+          <ul class="navbar-nav ml-auto">
+            <li class="nav-item d-flex align-items-center text-gray-600 small">
+              PBI Preview (Design and Planning)
+            </li>
+          </ul>
+        </nav>
+
+        <div class="container-fluid">
+          <div class="d-sm-flex align-items-center justify-content-between mb-4">
+            <div>
+              <h1 class="h3 mb-0 text-gray-800">Product Backlog Items</h1>
+              <p class="mb-0 text-gray-600 small">Card-only preview for GitHub Project and Issue work items (no side navigation, no full feature wiring yet).</p>
+            </div>
+            <a href="https://github.com/users/RahsaanPringle/projects/1/views/1" class="btn btn-primary btn-sm" target="_blank" rel="noopener noreferrer">
+              <i class="fas fa-external-link-alt mr-1"></i> View GitHub Project
+            </a>
+          </div>
+
+          <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+              <h6 class="m-0 font-weight-bold text-primary">PBI Card Layout Preview</h6>
+              <span class="small text-gray-500">Static mock data</span>
+            </div>
+            <div class="card-body">
+              <div class="pbi-board">
+                <article class="card border-left-primary shadow-sm mb-0">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <span class="pill pill-backlog">Backlog</span>
+                      <span class="pbi-meta">Issue #2</span>
+                    </div>
+                    <h2 class="pbi-title mb-2">Create PBI board page in sb-admin-react</h2>
+                    <p class="small text-gray-700 mb-3">As a product owner, I need to see PBIs in a card view so planning work is visible outside GitHub UI.</p>
+                    <div class="pbi-meta"><span class="signal">Priority:</span> High</div>
+                    <div class="pbi-meta"><span class="signal">Points:</span> 5</div>
+                    <div class="pbi-meta"><span class="signal">Owner:</span> Unassigned</div>
+                  </div>
+                </article>
+
+                <article class="card border-left-warning shadow-sm mb-0">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <span class="pill pill-progress">In Progress</span>
+                      <span class="pbi-meta">Project Item 18</span>
+                    </div>
+                    <h2 class="pbi-title mb-2">Map GitHub Issue labels to PBI metadata</h2>
+                    <p class="small text-gray-700 mb-3">Translate labels like priority, sprint, and area into UI chips for quick triage and filtering.</p>
+                    <div class="pbi-meta"><span class="signal">Priority:</span> Medium</div>
+                    <div class="pbi-meta"><span class="signal">Points:</span> 3</div>
+                    <div class="pbi-meta"><span class="signal">Owner:</span> @RahsaanPringle</div>
+                  </div>
+                </article>
+
+                <article class="card border-left-success shadow-sm mb-0">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <span class="pill pill-ready">Ready</span>
+                      <span class="pbi-meta">Project Item 22</span>
+                    </div>
+                    <h2 class="pbi-title mb-2">Enable quick edit actions for PBIs</h2>
+                    <p class="small text-gray-700 mb-3">Allow title, status, and estimate updates from a single card action menu backed by GitHub APIs.</p>
+                    <div class="pbi-meta"><span class="signal">Priority:</span> High</div>
+                    <div class="pbi-meta"><span class="signal">Points:</span> 8</div>
+                    <div class="pbi-meta"><span class="signal">Owner:</span> @RahsaanPringle</div>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
+
+          <div class="card shadow mb-4">
+            <div class="card-header py-3">
+              <h6 class="m-0 font-weight-bold text-primary">How This Can Be Implemented</h6>
+            </div>
+            <div class="card-body">
+              <div class="how-step">
+                <strong>1. Add a lightweight API proxy in the repo.</strong><br>
+                Create a server route that talks to GitHub GraphQL/REST using a PAT stored in environment variables. Keep tokens out of browser code.
+              </div>
+              <div class="how-step">
+                <strong>2. Read project items and linked issues.</strong><br>
+                Query GitHub Project items (status, iteration, estimates) and join issue details (title, labels, assignees, URL).
+              </div>
+              <div class="how-step">
+                <strong>3. Render in React card components.</strong><br>
+                Replace this static HTML with a route in sb-admin-react (for example /pbis) and map API responses to reusable PBI card components.
+              </div>
+              <div class="how-step mb-3">
+                <strong>4. Add guarded edit actions.</strong><br>
+                Start with status updates only, then add title/label edits. Include optimistic UI and failure rollback to keep edits reliable.
+              </div>
+
+              <p class="small text-gray-600 mb-2"><strong>Example API shape (for planning):</strong></p>
+              <pre>{
+  "items": [
+    {
+      "projectItemId": "PVTI_abc123",
+      "issueNumber": 2,
+      "title": "Create PBI board page in sb-admin-react",
+      "status": "Backlog",
+      "points": 5,
+      "priority": "High",
+      "assignees": ["RahsaanPringle"],
+      "labels": ["pbi", "ui"],
+      "url": "https://github.com/RahsaanPringle/NewsAggregator/issues/2"
+    }
+  ]
+}</pre>
+            </div>
+          </div>
+
+          <div class="card shadow mb-4">
+            <div class="card-header py-3">
+              <h6 class="m-0 font-weight-bold text-primary">Repo API Setup (PAT vs JWT)</h6>
+            </div>
+            <div class="card-body">
+              <div class="auth-grid mb-3">
+                <section class="auth-card">
+                  <h3>Use a PAT First (Recommended Now)</h3>
+                  <ul class="auth-list">
+                    <li>Fastest path for local development and prototyping.</li>
+                    <li>No JWT signing implementation required.</li>
+                    <li>Store token in server env only, never in browser code.</li>
+                    <li>Great for read/list + basic edit actions while validating UX.</li>
+                  </ul>
+                </section>
+
+                <section class="auth-card">
+                  <h3>Use GitHub App + JWT Later</h3>
+                  <ul class="auth-list">
+                    <li>Best long-term for production and team-managed access.</li>
+                    <li>Server signs JWT, exchanges for installation access token.</li>
+                    <li>Better permission scoping, auditing, and token rotation.</li>
+                    <li>More setup complexity but stronger operational model.</li>
+                  </ul>
+                </section>
+              </div>
+
+              <div class="how-step">
+                <strong>What to set up now (minimal):</strong><br>
+                Create a fine-grained PAT and grant repository + projects access for NewsAggregator. Add it to the backend env as <code>GITHUB_TOKEN</code>.
+              </div>
+              <div class="how-step">
+                <strong>Suggested backend env keys:</strong><br>
+                <code>GITHUB_TOKEN</code>, <code>GITHUB_OWNER</code>, <code>GITHUB_REPO</code>, <code>GITHUB_PROJECT_NUMBER</code>.
+              </div>
+              <div class="how-step mb-0">
+                <strong>Security rule:</strong><br>
+                Frontend should only call local routes like <code>/api/pbis</code>. The server route calls GitHub APIs and returns normalized card data.
+              </div>
+
+              <hr>
+
+              <h6 class="font-weight-bold text-gray-800 mb-2">Fine-Grained PAT Setup Checklist</h6>
+              <ol class="small text-gray-700 mb-0" style="padding-left: 1.1rem;">
+                <li>Open GitHub Settings -> Developer settings -> Personal access tokens -> Fine-grained tokens.</li>
+                <li>Click <strong>Generate new token</strong> and set an expiration date.</li>
+                <li>Under <strong>Resource owner</strong>, choose your account.</li>
+                <li>Under <strong>Repository access</strong>, select <strong>Only select repositories</strong> and choose <strong>NewsAggregator</strong>.</li>
+                <li>Grant repository permissions: <strong>Issues (Read and write)</strong> and <strong>Metadata (Read-only)</strong>.</li>
+                <li>Grant account/organization permission for <strong>Projects</strong> (Read and write) if your project board requires updates.</li>
+                <li>Generate token and store it once in your backend env file as <code>GITHUB_TOKEN</code>.</li>
+                <li>Restart backend and test a route like <code>/api/pbis</code> that reads from GitHub and returns normalized card data.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="vendor/jquery/jquery.min.js"></script>
+  <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+  <script src="js/sb-admin-2.min.js"></script>
+</body>
+</html>
