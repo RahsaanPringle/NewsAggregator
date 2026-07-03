@@ -109,13 +109,6 @@ server.get('/api/news', async (request, response) => {
 
 server.get('/api/business-news', async (_request, response) => {
   const apiKey = process.env.RAPIDAPI_KEY || process.env.VITE_RAPIDAPI_KEY
-  if (!apiKey) {
-    response.status(500).json({
-      error: 'Missing RapidAPI key. Set RAPIDAPI_KEY or VITE_RAPIDAPI_KEY before starting the cache server.',
-    })
-    return
-  }
-
   const mysqlConfig = getMysqlConfig()
   if (!mysqlConfig) {
     response.status(400).json({
@@ -126,27 +119,53 @@ server.get('/api/business-news', async (_request, response) => {
   }
 
   try {
-    const payload = await fetchGoogleBusinessNews(apiKey)
-    const normalizedArticles = normalizeGoogleBusinessArticles(payload)
-
     const pool = await getMysqlPool(mysqlConfig)
     await ensureMySqlArticleTable(pool)
+    let randomArticles = await listRandomArticlesByEndpoint(pool, BUSINESS_ENDPOINT_PATH, 9)
 
-    const { insertedCount, updatedCount } = await saveArticlesToMysql(pool, normalizedArticles, BUSINESS_ENDPOINT_PATH, BUSINESS_QUERY_PARAMS)
-    const randomArticles = await listRandomArticlesByEndpoint(pool, BUSINESS_ENDPOINT_PATH, 9)
+    const synced = {
+      attempted: 0,
+      inserted: 0,
+      updated: 0,
+    }
+
+    if (apiKey) {
+      try {
+        const payload = await fetchGoogleBusinessNews(apiKey)
+        const normalizedArticles = normalizeGoogleBusinessArticles(payload)
+
+        const { insertedCount, updatedCount } = await saveArticlesToMysql(
+          pool,
+          normalizedArticles,
+          BUSINESS_ENDPOINT_PATH,
+          BUSINESS_QUERY_PARAMS,
+        )
+
+        synced.attempted = normalizedArticles.length
+        synced.inserted = insertedCount
+        synced.updated = updatedCount
+
+        randomArticles = await listRandomArticlesByEndpoint(pool, BUSINESS_ENDPOINT_PATH, 9)
+      } catch (error) {
+        console.error('[business-news] upstream sync failed', {
+          message: error?.message,
+          upstreamStatus: error?.upstreamStatus,
+          upstreamStatusText: error?.upstreamStatusText,
+          upstreamBody: error?.upstreamBody,
+        })
+      }
+    } else {
+      console.warn('[business-news] skipped upstream sync: missing RAPIDAPI_KEY or VITE_RAPIDAPI_KEY')
+    }
 
     response.json({
       source: 'mysql',
       endpointPath: BUSINESS_ENDPOINT_PATH,
-      synced: {
-        attempted: normalizedArticles.length,
-        inserted: insertedCount,
-        updated: updatedCount,
-      },
+      synced,
       items: randomArticles,
     })
   } catch (error) {
-    response.status(502).json({ error: error.message || 'Unable to sync business news.' })
+    response.status(502).json({ error: error.message || 'Unable to load business news from MySQL.' })
   }
 })
 
@@ -712,7 +731,14 @@ async function fetchFromRapidApi(endpointPath, queryParams, apiKey) {
   })
 
   if (!apiResponse.ok) {
-    throw new Error(`RapidAPI request failed with status ${apiResponse.status}`)
+    const upstreamDetails = await getUpstreamErrorDetails(apiResponse)
+    const error = new Error(
+      `RapidAPI request failed with status ${apiResponse.status}${upstreamDetails.body ? `: ${upstreamDetails.body}` : ''}`,
+    )
+    error.upstreamStatus = apiResponse.status
+    error.upstreamStatusText = apiResponse.statusText
+    error.upstreamBody = upstreamDetails.body
+    throw error
   }
 
   return apiResponse.json()
@@ -799,7 +825,14 @@ async function fetchGoogleBusinessNews(apiKey) {
   })
 
   if (!apiResponse.ok) {
-    throw new Error(`Google business news request failed with status ${apiResponse.status}`)
+    const upstreamDetails = await getUpstreamErrorDetails(apiResponse)
+    const error = new Error(
+      `Google business news request failed with status ${apiResponse.status}${upstreamDetails.body ? `: ${upstreamDetails.body}` : ''}`,
+    )
+    error.upstreamStatus = apiResponse.status
+    error.upstreamStatusText = apiResponse.statusText
+    error.upstreamBody = upstreamDetails.body
+    throw error
   }
 
   return apiResponse.json()
@@ -860,6 +893,19 @@ function parseBusinessTimestamp(value) {
   }
 
   return parsedDate.toISOString()
+}
+
+async function getUpstreamErrorDetails(apiResponse) {
+  try {
+    const bodyText = await apiResponse.text()
+    return {
+      body: normalizeNullableString(bodyText, 500),
+    }
+  } catch (_error) {
+    return {
+      body: '',
+    }
+  }
 }
 
 async function saveArticlesToMysql(pool, articles, endpointPath, queryParams) {
