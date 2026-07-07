@@ -364,6 +364,68 @@ server.get('/api/mysql/articles/saved-by-day', async (request, response) => {
   }
 })
 
+server.get('/api/mysql/articles/source-distribution', async (request, response) => {
+  const mysqlConfig = getMysqlConfig()
+  const requestedLimit = Number(request.query.limit || 4)
+  const limit = Math.max(1, Math.min(Number.isFinite(requestedLimit) ? requestedLimit : 4, 25))
+  const endpointPath = normalizeEndpointPath(request.query.endpointPath)
+
+  if (!mysqlConfig) {
+    response.status(200).json({
+      enabled: false,
+      endpointPath: endpointPath || null,
+      totalArticles: 0,
+      items: [],
+      message:
+        'MySQL is not configured. Set MYSQL_HOST, MYSQL_DATABASE, MYSQL_USER, and MYSQL_PASSWORD in your environment.',
+    })
+    return
+  }
+
+  try {
+    const pool = await getMysqlPool(mysqlConfig)
+    await ensureMySqlArticleTable(pool)
+
+    const endpointFilterSql = endpointPath ? 'WHERE endpoint_path = ?' : ''
+    const queryParams = endpointPath ? [endpointPath] : []
+
+    const [rows] = await pool.query(
+      `SELECT
+         COALESCE(NULLIF(TRIM(source_name), ''), 'Unknown source') AS source_name,
+         COUNT(*) AS article_count
+       FROM news_articles
+       ${endpointFilterSql}
+       GROUP BY COALESCE(NULLIF(TRIM(source_name), ''), 'Unknown source')
+       ORDER BY article_count DESC, source_name ASC`,
+      queryParams,
+    )
+
+    const sourceCounts = rows.map((row) => ({
+      sourceName: row.source_name || 'Unknown source',
+      count: Number(row.article_count || 0),
+    }))
+    const topSources = sourceCounts.slice(0, limit)
+    const otherCount = sourceCounts.slice(limit).reduce((sum, item) => sum + item.count, 0)
+    const items = otherCount > 0 ? [...topSources, { sourceName: 'Other', count: otherCount }] : topSources
+    const totalArticles = sourceCounts.reduce((sum, item) => sum + item.count, 0)
+
+    response.status(200).json({
+      enabled: true,
+      endpointPath: endpointPath || null,
+      totalArticles,
+      items,
+    })
+  } catch (error) {
+    response.status(502).json({
+      enabled: false,
+      endpointPath: endpointPath || null,
+      totalArticles: 0,
+      items: [],
+      error: error.message || 'Unable to load source distribution from MySQL.',
+    })
+  }
+})
+
 server.get('/api/mysql/comments/revenue', async (_request, response) => {
   const mysqlConfig = getMysqlConfig()
 

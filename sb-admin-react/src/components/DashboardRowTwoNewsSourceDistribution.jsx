@@ -3,29 +3,38 @@ import DashboardCardMenu from './DashboardCardMenu'
 
 const SOURCE_COLORS = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b']
 const SOURCE_HOVER_COLORS = ['#2e59d9', '#17a673', '#2c9faf', '#dda20a', '#be2617']
+const NEWS_SOURCE_LIMIT = 4
 
-function buildNewsApiUrl() {
-  const searchParams = new URLSearchParams({ endpointPath: '/topic-headlines' })
-  searchParams.append('topic', 'WORLD')
-  searchParams.append('limit', '500')
-  searchParams.append('country', 'US')
-  searchParams.append('lang', 'en')
-
-  return `/api/news?${searchParams.toString()}`
+function buildSourceDistributionUrl() {
+  const searchParams = new URLSearchParams({ limit: String(NEWS_SOURCE_LIMIT) })
+  return `/api/mysql/articles/source-distribution?${searchParams.toString()}`
 }
 
-function normalizeArticles(payload) {
-  if (Array.isArray(payload?.data)) {
-    return payload.data
-  }
+function normalizeSourceDistributionPayload(payload) {
+  const normalizedItems = Array.isArray(payload?.items)
+    ? payload.items
+        .map((item) => ({
+          sourceName: String(item?.sourceName || 'Unknown source').trim() || 'Unknown source',
+          count: Number(item?.count || 0),
+        }))
+        .filter((item) => item.count > 0)
+    : []
 
-  return payload?.data?.top_news?.all_articles ?? payload?.data?.all_articles ?? []
+  return {
+    enabled: Boolean(payload?.enabled),
+    totalArticles: Number(payload?.totalArticles || 0),
+    items: normalizedItems,
+    message: payload?.message || '',
+    error: payload?.error || '',
+  }
 }
 
 function DashboardRowTwoNewsSourceDistribution({ scriptsReady }) {
   const canvasRef = useRef(null)
   const chartRef = useRef(null)
-  const [articles, setArticles] = useState([])
+  const [sourceItems, setSourceItems] = useState([])
+  const [totalArticles, setTotalArticles] = useState(0)
+  const [mysqlEnabled, setMysqlEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -35,9 +44,10 @@ function DashboardRowTwoNewsSourceDistribution({ scriptsReady }) {
     async function loadArticles() {
       setLoading(true)
       setError('')
+      setMysqlEnabled(true)
 
       try {
-        const response = await fetch(buildNewsApiUrl(), {
+        const response = await fetch(buildSourceDistributionUrl(), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -50,11 +60,24 @@ function DashboardRowTwoNewsSourceDistribution({ scriptsReady }) {
         }
 
         const payload = await response.json()
-        setArticles(normalizeArticles(payload))
+        const normalizedPayload = normalizeSourceDistributionPayload(payload)
+
+        setSourceItems(normalizedPayload.items)
+        setTotalArticles(normalizedPayload.totalArticles)
+        setMysqlEnabled(normalizedPayload.enabled)
+
+        if (!normalizedPayload.enabled && normalizedPayload.message) {
+          setError(normalizedPayload.message)
+        }
+
+        if (normalizedPayload.error) {
+          setError(normalizedPayload.error)
+        }
       } catch (requestError) {
         if (requestError.name !== 'AbortError') {
           setError(requestError.message || 'Unable to load source distribution.')
-          setArticles([])
+          setSourceItems([])
+          setTotalArticles(0)
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -71,26 +94,11 @@ function DashboardRowTwoNewsSourceDistribution({ scriptsReady }) {
   }, [])
 
   const sourceData = useMemo(() => {
-    const counts = new Map()
-
-    articles.forEach((article) => {
-      const sourceName = String(article?.source_name || 'Unknown source').trim() || 'Unknown source'
-      counts.set(sourceName, (counts.get(sourceName) || 0) + 1)
-    })
-
-    const sorted = [...counts.entries()].sort((left, right) => right[1] - left[1])
-    const topSources = sorted.slice(0, 4)
-    const remainderCount = sorted.slice(4).reduce((sum, entry) => sum + entry[1], 0)
-
-    if (remainderCount > 0) {
-      topSources.push(['Other', remainderCount])
-    }
-
     return {
-      labels: topSources.map((entry) => entry[0]),
-      values: topSources.map((entry) => entry[1]),
+      labels: sourceItems.map((item) => item.sourceName),
+      values: sourceItems.map((item) => item.count),
     }
-  }, [articles])
+  }, [sourceItems])
 
   useEffect(() => {
     const chartApi = window.Chart
@@ -161,7 +169,7 @@ function DashboardRowTwoNewsSourceDistribution({ scriptsReady }) {
           <DashboardCardMenu menuId="newsSourceDistributionMenu" />
         </div>
         <div className="card-body">
-          <div className="small text-gray-500 mb-3">Top sources from the same cached world headlines JSON feed</div>
+          <div className="small text-gray-500 mb-3">Top article sources from MySQL</div>
           {error ? (
             <div className="alert alert-warning mb-0" role="alert">
               {error}
@@ -174,12 +182,21 @@ function DashboardRowTwoNewsSourceDistribution({ scriptsReady }) {
               <div className="mt-4 text-center small">
                 {loading
                   ? 'Loading source share...'
-                  : sourceData.labels.map((label, index) => (
+                  : sourceData.labels.length > 0
+                    ? sourceData.labels.map((label, index) => (
                       <span key={label} className="mr-2">
                         <i className="fas fa-circle" style={{ color: SOURCE_COLORS[index] }}></i> {label}
                       </span>
-                    ))}
+                    ))
+                    : mysqlEnabled
+                      ? 'No article sources found in the database'
+                      : 'MySQL not configured'}
               </div>
+              {!loading && sourceData.labels.length > 0 ? (
+                <div className="mt-3 small text-gray-600 text-center">
+                  {new Intl.NumberFormat('en-US').format(totalArticles)} database articles counted
+                </div>
+              ) : null}
             </>
           )}
         </div>
