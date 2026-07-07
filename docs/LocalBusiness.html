@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Support Local | Moneta & Smith Mountain Lake</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --lake: #0d6efd;
+      --deep: #102a43;
+      --soft: #f3f8fb;
+      --gold: #f5b942;
+    }
+
+    body {
+      background: linear-gradient(180deg, #eef8ff 0%, #ffffff 42%, #f7fbff 100%);
+      color: var(--deep);
+    }
+
+    .hero {
+      background:
+        linear-gradient(120deg, rgba(16,42,67,.92), rgba(13,110,253,.76)),
+        url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=80');
+      background-size: cover;
+      background-position: center;
+      color: white;
+      border-radius: 0 0 2rem 2rem;
+    }
+
+    .hero .badge {
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.28);
+      color: #fff;
+    }
+
+    .section-title {
+      letter-spacing: -.03em;
+    }
+
+    .business-card {
+      border: 0;
+      border-radius: 1.25rem;
+      box-shadow: 0 12px 28px rgba(16, 42, 67, .08);
+      transition: transform .18s ease, box-shadow .18s ease;
+      height: 100%;
+    }
+
+    .business-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 36px rgba(16, 42, 67, .14);
+    }
+
+    .icon-circle {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--soft);
+      color: var(--lake);
+      font-size: 1.25rem;
+    }
+
+    .category-pill {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .category-pill.active {
+      background: var(--deep) !important;
+      color: #fff !important;
+      border-color: var(--deep) !important;
+    }
+
+    .local-note {
+      border-left: 5px solid var(--gold);
+      background: #fff8e7;
+    }
+
+    .footer-cta {
+      background: #102a43;
+      color: white;
+      border-radius: 1.5rem;
+    }
+
+    .small-muted {
+      color: #66788a;
+    }
+  </style>
+</head>
+<body>
+  <header class="hero py-5 mb-5">
+    <div class="container py-4">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <span class="badge rounded-pill px-3 py-2 mb-3">Moneta, VA • ZIP 24121 • Smith Mountain Lake</span>
+          <h1 class="display-4 fw-bold section-title mb-3">Support Local at Smith Mountain Lake</h1>
+          <p class="lead mb-4">A starter directory focused on independent businesses around Moneta, Virginia — restaurants, shops, lake life, gifts, wineries, and local services.</p>
+          <div class="d-flex flex-wrap gap-2">
+            <a href="#directory" class="btn btn-light btn-lg"><i class="bi bi-shop me-2"></i>Browse Businesses</a>
+            <a href="#ideas" class="btn btn-outline-light btn-lg"><i class="bi bi-lightbulb me-2"></i>Community Ideas</a>
+          </div>
+        </div>
+        <div class="col-lg-4">
+          <div class="card border-0 rounded-4 shadow-lg">
+            <div class="card-body p-4 text-dark">
+              <h2 class="h5 fw-bold mb-3">Directory Goal</h2>
+              <p class="mb-3">Highlight places that feel local, personal, and worth visiting — not big-box chains or national franchises.</p>
+              <div class="d-flex align-items-center gap-3">
+                <div class="icon-circle"><i class="bi bi-heart-fill"></i></div>
+                <div>
+                  <strong>Local-first content</strong><br>
+                  <span class="small-muted">Good for visitors and residents.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container pb-5">
+    <section class="mb-5">
+      <div class="row g-4">
+        <div class="col-md-4">
+          <div class="card border-0 rounded-4 shadow-sm h-100">
+            <div class="card-body p-4">
+              <div class="icon-circle mb-3"><i class="bi bi-geo-alt"></i></div>
+              <h3 class="h5 fw-bold">Location Focused</h3>
+              <p class="mb-0 small-muted">Built around Moneta, VA and the Smith Mountain Lake community.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0 rounded-4 shadow-sm h-100">
+            <div class="card-body p-4">
+              <div class="icon-circle mb-3"><i class="bi bi-person-hearts"></i></div>
+              <h3 class="h5 fw-bold">Independent Businesses</h3>
+              <p class="mb-0 small-muted">A curated starter list aimed at avoiding franchises and big chains.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card border-0 rounded-4 shadow-sm h-100">
+            <div class="card-body p-4">
+              <div class="icon-circle mb-3"><i class="bi bi-calendar-event"></i></div>
+              <h3 class="h5 fw-bold">Community Hub Potential</h3>
+              <p class="mb-0 small-muted">Events, live music, food specials, yard sales, jobs, and local updates could come next.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="directory" class="mb-5">
+      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
+        <div>
+          <h2 class="display-6 fw-bold section-title mb-2">Local Business Starter Directory</h2>
+          <p class="small-muted mb-0">Use this as seed content for a local portal, business directory, or community homepage.</p>
+        </div>
+        <div class="input-group" style="max-width: 360px;">
+          <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+          <input id="searchInput" type="search" class="form-control" placeholder="Search businesses...">
+        </div>
+      </div>
+
+      <div id="categoryFilters" class="d-flex flex-wrap gap-2 mb-4"></div>
+      <div id="businessGrid" class="row g-4"></div>
+    </section>
+
+    <section class="local-note rounded-4 p-4 mb-5">
+      <h2 class="h4 fw-bold mb-2"><i class="bi bi-exclamation-circle me-2"></i>Verification Note</h2>
+      <p class="mb-0">This is a starter dataset for planning and prototyping. Before publishing, verify each business name, address, phone number, hours, ownership/franchise status, and website.</p>
+    </section>
+
+    <section id="ideas" class="mb-5">
+      <h2 class="display-6 fw-bold section-title mb-4">Community Hub Ideas</h2>
+      <div class="row g-3">
+        <div class="col-sm-6 col-lg-3"><div class="card border-0 rounded-4 shadow-sm"><div class="card-body"><i class="bi bi-music-note-beamed me-2"></i>Live Music Tonight</div></div></div>
+        <div class="col-sm-6 col-lg-3"><div class="card border-0 rounded-4 shadow-sm"><div class="card-body"><i class="bi bi-tags me-2"></i>Local Deals</div></div></div>
+        <div class="col-sm-6 col-lg-3"><div class="card border-0 rounded-4 shadow-sm"><div class="card-body"><i class="bi bi-calendar2-week me-2"></i>Today's Events</div></div></div>
+        <div class="col-sm-6 col-lg-3"><div class="card border-0 rounded-4 shadow-sm"><div class="card-body"><i class="bi bi-briefcase me-2"></i>Local Jobs</div></div></div>
+        <div class="col-sm-6 col-lg-3"><div class="card border-0 rounded-4 shadow-sm"><div class="card-body"><i class="bi bi-house-heart me-2"></i>Real Estate</div></div></div>
+        <div class="col-sm-6 col-lg-3"><div class="card border-0 rounded-4 shadow-sm"><div class="card-body"><i class="bi bi-basket me-2"></i>Farmers Markets</div></div></div>
+        <div class="col-sm-6 col-lg-3"><div class="card border-0 rounded-4 shadow-sm"><div class="card-body"><i class="bi bi-water me-2"></i>Boat Ramp Conditions</div></div></div>
+        <div class="col-sm-6 col-lg-3"><div class="card border-0 rounded-4 shadow-sm"><div class="card-body"><i class="bi bi-megaphone me-2"></i>Community Notices</div></div></div>
+      </div>
+    </section>
+
+    <section class="footer-cta p-4 p-lg-5">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <h2 class="fw-bold mb-2">Make it more than a directory.</h2>
+          <p class="mb-0 opacity-75">The real opportunity is a daily-use local homepage: events, deals, lake updates, jobs, restaurants, services, and hidden gems.</p>
+        </div>
+        <div class="col-lg-4 text-lg-end">
+          <button class="btn btn-warning btn-lg" onclick="window.print()"><i class="bi bi-printer me-2"></i>Print Page</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const businesses = [
+      { name: "The Blackwater Cafe", category: "Restaurant", description: "American restaurant with a local Smith Mountain Lake feel.", icon: "bi-cup-hot" },
+      { name: "La Casa Toscana", category: "Restaurant", description: "Italian dining option serving the lake community.", icon: "bi-egg-fried" },
+      { name: "Vinny's", category: "Restaurant", description: "Italian and pizza spot for casual local dining.", icon: "bi-fire" },
+      { name: "Edo Grill and Sushi", category: "Restaurant", description: "Japanese grill and sushi option in the Moneta area.", icon: "bi-shop" },
+      { name: "Smith Mountain Lake Coffee House", category: "Coffee", description: "Coffee, bakery, and casual meetup spot near the lake.", icon: "bi-cup-hot-fill" },
+      { name: "Westlake Coffee and Cafe", category: "Coffee", description: "Cafe option for breakfast, coffee, and conversation.", icon: "bi-cup" },
+      { name: "Smith Mountain Flowers", category: "Gifts & Flowers", description: "Florist serving Moneta and Smith Mountain Lake.", icon: "bi-flower1" },
+      { name: "Reclaimed LLC", category: "Shopping", description: "Furniture, home decor, gifts, and local finds.", icon: "bi-bag-heart" },
+      { name: "Bob's Up The Creek Outfitters", category: "Lake Life", description: "Outdoor recreation and lake-life outfitter.", icon: "bi-compass" },
+      { name: "Hickory Hill Vineyards", category: "Winery", description: "Local winery near Smith Mountain Lake.", icon: "bi-cup-straw" },
+      { name: "All Things Irish", category: "Shopping", description: "Boutique and gift shop with a distinctive theme.", icon: "bi-gift" },
+      { name: "JBohnBishop Mercantile Boutique", category: "Shopping", description: "Boutique and mercantile-style shopping near Smith Mountain Lake.", icon: "bi-handbag" },
+      { name: "Sassy Boutique", category: "Shopping", description: "Boutique shopping for clothing, gifts, and accessories.", icon: "bi-gem" },
+      { name: "Gifts Ahoy", category: "Gifts & Flowers", description: "Gift shop with lake-friendly finds and souvenirs.", icon: "bi-gift-fill" },
+      { name: "Mama Ann's Gifts & Goodies", category: "Gifts & Flowers", description: "Gifts, goodies, and family-friendly local shopping.", icon: "bi-stars" },
+      { name: "The Shack", category: "Shopping", description: "Antiques, local character, and a memorable stop for visitors.", icon: "bi-house-heart" },
+      { name: "Drifter's", category: "Lake Life", description: "Marina restaurant and live music destination.", icon: "bi-water" }
+    ];
+
+    const grid = document.getElementById('businessGrid');
+    const filters = document.getElementById('categoryFilters');
+    const searchInput = document.getElementById('searchInput');
+    let activeCategory = 'All';
+
+    const categories = ['All', ...new Set(businesses.map(b => b.category))];
+
+    function renderFilters() {
+      filters.innerHTML = categories.map(category => `
+        <span class="badge rounded-pill text-bg-light border px-3 py-2 category-pill ${category === activeCategory ? 'active' : ''}" data-category="${category}">
+          ${category}
+        </span>
+      `).join('');
+
+      document.querySelectorAll('.category-pill').forEach(pill => {
+        pill.addEventListener('click', () => {
+          activeCategory = pill.dataset.category;
+          renderFilters();
+          renderBusinesses();
+        });
+      });
+    }
+
+    function renderBusinesses() {
+      const term = searchInput.value.trim().toLowerCase();
+      const filtered = businesses.filter(b => {
+        const matchesCategory = activeCategory === 'All' || b.category === activeCategory;
+        const matchesSearch = !term || `${b.name} ${b.category} ${b.description}`.toLowerCase().includes(term);
+        return matchesCategory && matchesSearch;
+      });
+
+      grid.innerHTML = filtered.map(b => `
+        <div class="col-md-6 col-xl-4">
+          <article class="card business-card">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-start gap-3 mb-3">
+                <div class="icon-circle"><i class="bi ${b.icon}"></i></div>
+                <div>
+                  <h3 class="h5 fw-bold mb-1">${b.name}</h3>
+                  <span class="badge text-bg-primary-subtle text-primary-emphasis rounded-pill">${b.category}</span>
+                </div>
+              </div>
+              <p class="small-muted mb-4">${b.description}</p>
+              <div class="d-flex justify-content-between align-items-center small">
+                <span><i class="bi bi-geo-alt me-1"></i>Moneta, VA 24121 area</span>
+                <span class="text-success"><i class="bi bi-check-circle me-1"></i>Local Lead</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      `).join('') || `
+        <div class="col-12">
+          <div class="alert alert-warning rounded-4">No matching businesses found.</div>
+        </div>
+      `;
+    }
+
+    searchInput.addEventListener('input', renderBusinesses);
+    renderFilters();
+    renderBusinesses();
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

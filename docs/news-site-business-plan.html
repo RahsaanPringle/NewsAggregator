@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NewsAggregator Business Plan</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #687487;
+      --line: #dce3ed;
+      --paper: #ffffff;
+      --wash: #f5f8fc;
+      --blue: #2454d6;
+      --green: #178a5f;
+      --gold: #b7791f;
+      --red: #b42318;
+    }
+
+    body {
+      background:
+        linear-gradient(180deg, #f7f9fd 0%, #eef3f9 100%);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .topbar {
+      background: #101828;
+      color: #ffffff;
+      border-bottom: 4px solid #c9a227;
+    }
+
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 8px;
+      display: inline-grid;
+      place-items: center;
+      background: #c9a227;
+      color: #101828;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .hero {
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      color: var(--blue);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .metric {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      min-height: 118px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 1.55rem;
+      line-height: 1.1;
+    }
+
+    .section {
+      padding: 34px 0;
+    }
+
+    .panel {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 8px 18px rgba(16, 24, 40, 0.05);
+    }
+
+    .panel-head {
+      border-bottom: 1px solid var(--line);
+      padding: 18px 20px;
+    }
+
+    .panel-body {
+      padding: 20px;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: #edf2ff;
+      color: #2446a6;
+    }
+
+    .pill.green { background: #e7f8ef; color: #087047; }
+    .pill.gold { background: #fff7df; color: #8a5a00; }
+    .pill.red { background: #fff0ed; color: #9f2419; }
+
+    .nav-pills .nav-link {
+      border-radius: 8px;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .nav-pills .nav-link.active {
+      background: var(--blue);
+    }
+
+    .task-row {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #ffffff;
+    }
+
+    .task-row + .task-row {
+      margin-top: 10px;
+    }
+
+    .task-row input {
+      width: 18px;
+      height: 18px;
+      margin-top: 3px;
+    }
+
+    .small-muted {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .table th {
+      color: #475467;
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .ad-slot {
+      border: 2px dashed #b9c3d3;
+      border-radius: 8px;
+      padding: 18px;
+      background: #fbfcff;
+      min-height: 104px;
+    }
+
+    .code-ish {
+      background: #101828;
+      border-radius: 8px;
+      color: #f8fafc;
+      padding: 16px;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+    }
+
+    .mermaid {
+      background: #ffffff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .diagram-preview {
+      cursor: zoom-in;
+    }
+
+    .diagram-lightbox .modal-dialog {
+      max-width: min(1180px, calc(100vw - 32px));
+    }
+
+    .diagram-lightbox .modal-body {
+      background: #f8fafc;
+      overflow-x: auto;
+    }
+
+    .diagram-lightbox .mermaid {
+      min-width: 980px;
+      font-size: 1.08rem;
+    }
+
+    .progress {
+      height: 10px;
+    }
+
+    @media print {
+      .topbar, .controls, .no-print {
+        display: none !important;
+      }
+
+      .section {
+        padding: 18px 0;
+      }
+
+      .panel {
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container py-3 d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-3">
+        <span class="brand-mark">NA</span>
+        <div>
+          <div class="fw-bold">NewsAggregator</div>
+          <div class="small text-white-50">Business plan draft</div>
+        </div>
+      </div>
+      <div class="small text-white-50">Concept to revenue website</div>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container py-5">
+        <div class="row align-items-end g-4">
+          <div class="col-lg-8">
+            <div class="eyebrow mb-2">Sales pitch, task list, and operating manual</div>
+            <h1 class="display-5 fw-bold mb-3">Build a data-backed local news destination that can earn from direct ad sales.</h1>
+            <p class="lead text-secondary mb-0">
+              The current <strong>news-api</strong> and <strong>sb-admin-react</strong> projects already prove the core engine:
+              collect news, cache it, store articles, display them quickly, and measure source activity. The next move is to package
+              that engine into a public-facing website with sellable ad inventory and a repeatable editorial workflow.
+            </p>
+          </div>
+          <div class="col-lg-4">
+            <div class="panel">
+              <div class="panel-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <strong>Launch Readiness</strong>
+                  <span id="readinessLabel" class="pill">0%</span>
+                </div>
+                <div class="progress mb-3" role="progressbar" aria-label="Launch readiness">
+                  <div id="readinessBar" class="progress-bar" style="width: 0%"></div>
+                </div>
+                <p class="small-muted mb-0">
+                  This score updates as tasks are checked off below and is saved in LocalStorage for planning sessions.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="row g-3">
+          <div class="col-md-6 col-xl-3">
+            <div class="metric">
+              <span class="pill green mb-3">Proof already exists</span>
+              <strong>News data</strong>
+              <div class="small-muted mt-2">RapidAPI feeds, cache server, MySQL article store, and dashboard components.</div>
+            </div>
+          </div>
+          <div class="col-md-6 col-xl-3">
+            <div class="metric">
+              <span class="pill gold mb-3">Revenue target</span>
+              <strong>Ad slots</strong>
+              <div class="small-muted mt-2">Sell sponsored placements, display ads, newsletters, and local partner packages.</div>
+            </div>
+          </div>
+          <div class="col-md-6 col-xl-3">
+            <div class="metric">
+              <span class="pill mb-3">First audience</span>
+              <strong>Curious readers</strong>
+              <div class="small-muted mt-2">People who want fast context, article links, comments, and lightweight summaries.</div>
+            </div>
+          </div>
+          <div class="col-md-6 col-xl-3">
+            <div class="metric">
+              <span class="pill red mb-3">Key risk</span>
+              <strong>Trust</strong>
+              <div class="small-muted mt-2">The site must clearly separate aggregation, commentary, ads, and original reporting.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section pt-0">
+      <div class="container">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="eyebrow mb-1">Positioning</div>
+            <h2 class="h4 mb-0">What We Are Building</h2>
+          </div>
+          <div class="panel-body">
+            <div class="row g-4">
+              <div class="col-lg-7">
+                <p>
+                  NewsAggregator should become a fast, organized news site that blends aggregation, ranking, summaries,
+                  reader comments, and advertiser-friendly sections. The public site should feel like a practical news product,
+                  while the admin dashboard remains the control room for collection, moderation, analytics, and ad operations.
+                </p>
+                <p class="mb-0">
+                  The business starts simple: prove repeatable traffic and local advertiser interest before building expensive
+                  newsroom infrastructure. The site earns trust by linking to original sources, labeling sponsored content,
+                  and using the database to keep the experience fast and measurable.
+                </p>
+              </div>
+              <div class="col-lg-5">
+                <div class="ad-slot">
+                  <div class="fw-bold mb-2">Sample advertiser promise</div>
+                  <div class="small-muted">
+                    "Reach engaged readers at the moment they are browsing daily headlines, business updates, and developing
+                    stories. Buy a weekly sponsor package with transparent placement and simple performance reporting."
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-lg-7">
+            <div class="panel h-100">
+              <div class="panel-head d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div>
+                  <div class="eyebrow mb-1">Architecture</div>
+                  <h2 class="h4 mb-0">Conceptual Product Flow</h2>
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-outline-primary btn-sm no-print"
+                  data-bs-toggle="modal"
+                  data-bs-target="#productFlowModal"
+                >
+                  Expand diagram
+                </button>
+              </div>
+              <div class="panel-body">
+                <pre
+                  class="mermaid diagram-preview mb-0"
+                  data-bs-toggle="modal"
+                  data-bs-target="#productFlowModal"
+                  title="Open larger diagram"
+                >
+flowchart LR
+  A["External News APIs"] --> B["news-api and cache services"]
+  B --> C["MySQL news_articles"]
+  C --> D["Admin dashboard"]
+  C --> E["Public news website"]
+  D --> F["Moderation and curation"]
+  D --> G["Ad inventory manager"]
+  G --> E
+  E --> H["Readers"]
+  E --> I["Advertisers"]
+  H --> J["Comments, clicks, shares"]
+  J --> D
+                </pre>
+                <p class="small-muted mt-2 mb-0 no-print">Click the diagram or use Expand diagram for a larger view.</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-5">
+            <div class="panel h-100">
+              <div class="panel-head">
+                <div class="eyebrow mb-1">Revenue Mix</div>
+                <h2 class="h4 mb-0">Initial Monetization Model</h2>
+              </div>
+              <div class="panel-body">
+                <canvas id="revenueChart" height="210"></canvas>
+                <p class="small-muted mt-3 mb-0">
+                  Draft target mix for year one. The priority is direct ad sales first, then sponsored content and newsletter packages.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="eyebrow mb-1">Roadmap</div>
+            <h2 class="h4 mb-0">Phased Plan From Concept To Real Website</h2>
+          </div>
+          <div class="panel-body">
+            <ul class="nav nav-pills controls mb-4" id="planTabs" role="tablist">
+              <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="phase-one-tab" data-bs-toggle="pill" data-bs-target="#phase-one" type="button" role="tab">Phase 1</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="phase-two-tab" data-bs-toggle="pill" data-bs-target="#phase-two" type="button" role="tab">Phase 2</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="phase-three-tab" data-bs-toggle="pill" data-bs-target="#phase-three" type="button" role="tab">Phase 3</button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button class="nav-link" id="phase-four-tab" data-bs-toggle="pill" data-bs-target="#phase-four" type="button" role="tab">Phase 4</button>
+              </li>
+            </ul>
+            <div class="tab-content">
+              <div class="tab-pane fade show active" id="phase-one" role="tabpanel" tabindex="0">
+                <div class="row g-4">
+                  <div class="col-lg-4">
+                    <span class="pill green mb-2">0 to 30 days</span>
+                    <h3 class="h5">Foundation</h3>
+                    <p class="small-muted">Turn the dashboard prototype into a stable publishing system.</p>
+                  </div>
+                  <div class="col-lg-8">
+                    <ul class="mb-0">
+                      <li>Keep all feed refreshes server-side and database-first.</li>
+                      <li>Create public article/category pages from the MySQL article store.</li>
+                      <li>Define editorial labels: aggregated, curated, sponsored, commentary, and original.</li>
+                      <li>Add site navigation for World, Business, Coverage, Trending, and Opinion.</li>
+                      <li>Document the minimum viable publishing workflow.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div class="tab-pane fade" id="phase-two" role="tabpanel" tabindex="0">
+                <div class="row g-4">
+                  <div class="col-lg-4">
+                    <span class="pill mb-2">30 to 60 days</span>
+                    <h3 class="h5">Audience</h3>
+                    <p class="small-muted">Build habits, sharing loops, and trust signals.</p>
+                  </div>
+                  <div class="col-lg-8">
+                    <ul class="mb-0">
+                      <li>Add daily summary pages and source distribution transparency.</li>
+                      <li>Improve article comments with moderation and abuse handling.</li>
+                      <li>Add newsletter signup and weekly digest templates.</li>
+                      <li>Track page views, outbound clicks, searches, and comment engagement.</li>
+                      <li>Create a public "Advertise With Us" page with starter packages.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div class="tab-pane fade" id="phase-three" role="tabpanel" tabindex="0">
+                <div class="row g-4">
+                  <div class="col-lg-4">
+                    <span class="pill gold mb-2">60 to 90 days</span>
+                    <h3 class="h5">Revenue</h3>
+                    <p class="small-muted">Make ad inventory concrete, measurable, and sellable.</p>
+                  </div>
+                  <div class="col-lg-8">
+                    <ul class="mb-0">
+                      <li>Create ad slots in header, sidebar, article body, newsletter, and sponsored story cards.</li>
+                      <li>Build a simple ad campaign table with advertiser, placement, dates, creative URL, and status.</li>
+                      <li>Add admin reporting for impressions, clicks, CTR, and active campaigns.</li>
+                      <li>Prepare a one-page media kit for local advertisers.</li>
+                      <li>Sell a pilot package to 3 to 5 early advertisers.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div class="tab-pane fade" id="phase-four" role="tabpanel" tabindex="0">
+                <div class="row g-4">
+                  <div class="col-lg-4">
+                    <span class="pill red mb-2">90 days and beyond</span>
+                    <h3 class="h5">Scale</h3>
+                    <p class="small-muted">Turn the prototype into a repeatable media operation.</p>
+                  </div>
+                  <div class="col-lg-8">
+                    <ul class="mb-0">
+                      <li>Add original reporting or contributor posts where the site can own unique value.</li>
+                      <li>Segment ad inventory by category, geography, device, and newsletter audience.</li>
+                      <li>Automate advertiser invoices, creative approvals, and campaign summaries.</li>
+                      <li>Introduce SEO pages, structured data, sitemap generation, and archive pages.</li>
+                      <li>Evaluate memberships only after repeat traffic and advertiser demand are visible.</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-lg-6">
+            <div class="panel h-100">
+              <div class="panel-head">
+                <div class="eyebrow mb-1">Ad Products</div>
+                <h2 class="h4 mb-0">Starter Inventory To Sell</h2>
+              </div>
+              <div class="panel-body">
+                <div class="table-responsive">
+                  <table class="table align-middle">
+                    <thead>
+                      <tr>
+                        <th>Product</th>
+                        <th>Placement</th>
+                        <th>Good For</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Homepage sponsor</td>
+                        <td>Top banner and first sidebar slot</td>
+                        <td>Broad brand awareness</td>
+                      </tr>
+                      <tr>
+                        <td>Category sponsor</td>
+                        <td>World, Business, or Coverage section</td>
+                        <td>Contextual local advertisers</td>
+                      </tr>
+                      <tr>
+                        <td>Sponsored article card</td>
+                        <td>Clearly labeled content card</td>
+                        <td>Events, services, launches</td>
+                      </tr>
+                      <tr>
+                        <td>Newsletter sponsor</td>
+                        <td>Weekly digest placement</td>
+                        <td>Repeat exposure</td>
+                      </tr>
+                      <tr>
+                        <td>Founding partner</td>
+                        <td>Bundle across web and email</td>
+                        <td>Early advertisers who want ownership</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="panel h-100">
+              <div class="panel-head">
+                <div class="eyebrow mb-1">Operating Rules</div>
+                <h2 class="h4 mb-0">Ad Standards Before Selling</h2>
+              </div>
+              <div class="panel-body">
+                <ul class="mb-0">
+                  <li>Every paid placement must be labeled as sponsored, advertisement, or partner content.</li>
+                  <li>Ads should never impersonate editorial headlines or source links.</li>
+                  <li>Campaign dates, placement names, advertiser contact, and creative files should be tracked in the database.</li>
+                  <li>Advertiser reporting should use simple metrics first: impressions, clicks, CTR, and active days.</li>
+                  <li>Reject ads that damage trust, confuse readers, or create legal/compliance risk.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="panel">
+          <div class="panel-head d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+              <div class="eyebrow mb-1">Execution</div>
+              <h2 class="h4 mb-0">Interactive Launch Checklist</h2>
+            </div>
+            <button id="resetTasks" type="button" class="btn btn-outline-secondary btn-sm no-print">Reset saved progress</button>
+          </div>
+          <div class="panel-body">
+            <div class="row g-3" id="taskList">
+              <div class="col-lg-6">
+                <div class="task-row d-flex gap-3">
+                  <input class="task-check" type="checkbox" id="task-public-shell">
+                  <label for="task-public-shell">
+                    <strong>Design public website shell</strong>
+                    <span class="d-block small-muted">Use templates for visual direction, but build the first screen as a real news experience.</span>
+                  </label>
+                </div>
+                <div class="task-row d-flex gap-3">
+                  <input class="task-check" type="checkbox" id="task-db-pages">
+                  <label for="task-db-pages">
+                    <strong>Serve article pages from MySQL</strong>
+                    <span class="d-block small-muted">Route article, category, source, and archive pages through database-backed endpoints.</span>
+                  </label>
+                </div>
+                <div class="task-row d-flex gap-3">
+                  <input class="task-check" type="checkbox" id="task-editorial-labels">
+                  <label for="task-editorial-labels">
+                    <strong>Add editorial and sponsored labels</strong>
+                    <span class="d-block small-muted">Make aggregation, commentary, original reporting, and sponsored content visually distinct.</span>
+                  </label>
+                </div>
+                <div class="task-row d-flex gap-3">
+                  <input class="task-check" type="checkbox" id="task-analytics">
+                  <label for="task-analytics">
+                    <strong>Instrument reader analytics</strong>
+                    <span class="d-block small-muted">Track page views, source clicks, article saves, comments, searches, and ad clicks.</span>
+                  </label>
+                </div>
+              </div>
+              <div class="col-lg-6">
+                <div class="task-row d-flex gap-3">
+                  <input class="task-check" type="checkbox" id="task-ad-schema">
+                  <label for="task-ad-schema">
+                    <strong>Create ad campaign schema</strong>
+                    <span class="d-block small-muted">Start with advertisers, campaigns, placements, creatives, dates, status, and click target URL.</span>
+                  </label>
+                </div>
+                <div class="task-row d-flex gap-3">
+                  <input class="task-check" type="checkbox" id="task-ad-slots">
+                  <label for="task-ad-slots">
+                    <strong>Render ad slots on public pages</strong>
+                    <span class="d-block small-muted">Add fallback house ads so empty inventory still looks intentional.</span>
+                  </label>
+                </div>
+                <div class="task-row d-flex gap-3">
+                  <input class="task-check" type="checkbox" id="task-media-kit">
+                  <label for="task-media-kit">
+                    <strong>Prepare media kit and rate card</strong>
+                    <span class="d-block small-muted">Explain audience, placements, starter pricing, creative rules, and contact flow.</span>
+                  </label>
+                </div>
+                <div class="task-row d-flex gap-3">
+                  <input class="task-check" type="checkbox" id="task-sales-pilot">
+                  <label for="task-sales-pilot">
+                    <strong>Run founding advertiser pilot</strong>
+                    <span class="d-block small-muted">Sell a simple package, report results manually, then automate what repeats.</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="eyebrow mb-1">Implementation Notes</div>
+            <h2 class="h4 mb-0">How To Move The Codebase</h2>
+          </div>
+          <div class="panel-body">
+            <div class="row g-4">
+              <div class="col-lg-6">
+                <h3 class="h5">Near-term repo plan</h3>
+                <ol class="mb-0">
+                  <li>Keep <code>sb-admin-react</code> as the internal dashboard and operational console.</li>
+                  <li>Use <code>news-api</code> for reusable data APIs or consolidate server code if duplication appears.</li>
+                  <li>Add a public frontend path or app once the data contracts are stable.</li>
+                  <li>Keep article reads database-first and refresh feeds in the background.</li>
+                  <li>Create a small ad-serving module before adding third-party ad networks.</li>
+                </ol>
+              </div>
+              <div class="col-lg-6">
+                <h3 class="h5">Suggested first ad tables</h3>
+                <div class="code-ish">
+advertisers(id, name, contact_email, website_url, status)
+ad_campaigns(id, advertiser_id, name, starts_at, ends_at, budget, status)
+ad_placements(id, code, label, page_area, dimensions, is_active)
+ad_creatives(id, campaign_id, placement_id, image_url, headline, target_url)
+ad_events(id, creative_id, event_type, page_url, occurred_at)
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="panel">
+          <div class="panel-head">
+            <div class="eyebrow mb-1">Decision Log</div>
+            <h2 class="h4 mb-0">Open Business Decisions</h2>
+          </div>
+          <div class="panel-body">
+            <div class="table-responsive">
+              <table class="table align-middle">
+                <thead>
+                  <tr>
+                    <th>Decision</th>
+                    <th>Recommendation</th>
+                    <th>Why It Matters</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Public brand name</td>
+                    <td>Keep NewsAggregator as working name until visual identity is chosen.</td>
+                    <td>Prevents brand polish from blocking product proof.</td>
+                  </tr>
+                  <tr>
+                    <td>Initial geography</td>
+                    <td>Start broad with national/world feeds, then add local focus where advertiser relationships exist.</td>
+                    <td>Local ad sales work best when the audience promise is specific.</td>
+                  </tr>
+                  <tr>
+                    <td>Ad sales model</td>
+                    <td>Sell direct sponsorships before programmatic ads.</td>
+                    <td>Direct packages are easier to explain, control, and validate early.</td>
+                  </tr>
+                  <tr>
+                    <td>Original content</td>
+                    <td>Add it after the public site and ad slots are working.</td>
+                    <td>Original reporting is valuable, but it increases operating cost.</td>
+                  </tr>
+                  <tr>
+                    <td>Reader accounts</td>
+                    <td>Keep comments lightweight first, then add accounts only when moderation needs demand it.</td>
+                    <td>Reduces friction while the audience is still forming.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="py-4">
+    <div class="container small-muted">
+      Draft business plan for NewsAggregator. Update this document as product, audience, and ad-sales assumptions become evidence.
+    </div>
+  </footer>
+
+  <div class="modal fade diagram-lightbox" id="productFlowModal" tabindex="-1" aria-labelledby="productFlowModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <div class="eyebrow mb-1">Architecture</div>
+            <h2 class="modal-title h5" id="productFlowModalLabel">Conceptual Product Flow</h2>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <pre class="mermaid mb-0">
+flowchart LR
+  A["External News APIs"] --> B["news-api and cache services"]
+  B --> C["MySQL news_articles"]
+  C --> D["Admin dashboard"]
+  C --> E["Public news website"]
+  D --> F["Moderation and curation"]
+  D --> G["Ad inventory manager"]
+  G --> E
+  E --> H["Readers"]
+  E --> I["Advertisers"]
+  H --> J["Comments, clicks, shares"]
+  J --> D
+          </pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: "default", securityLevel: "loose" });
+
+    const taskStorageKey = "newsAggregatorBusinessPlanTasks";
+    const taskChecks = Array.from(document.querySelectorAll(".task-check"));
+    const readinessBar = document.getElementById("readinessBar");
+    const readinessLabel = document.getElementById("readinessLabel");
+    const resetTasks = document.getElementById("resetTasks");
+
+    function readTaskState() {
+      try {
+        return JSON.parse(localStorage.getItem(taskStorageKey) || "{}");
+      } catch (_error) {
+        return {};
+      }
+    }
+
+    function writeTaskState() {
+      const state = {};
+      taskChecks.forEach((item) => {
+        state[item.id] = item.checked;
+      });
+      localStorage.setItem(taskStorageKey, JSON.stringify(state));
+    }
+
+    function updateReadiness() {
+      const completed = taskChecks.filter((item) => item.checked).length;
+      const percent = taskChecks.length ? Math.round((completed / taskChecks.length) * 100) : 0;
+      readinessBar.style.width = percent + "%";
+      readinessLabel.textContent = percent + "%";
+    }
+
+    const savedTaskState = readTaskState();
+    taskChecks.forEach((item) => {
+      item.checked = Boolean(savedTaskState[item.id]);
+      item.addEventListener("change", () => {
+        writeTaskState();
+        updateReadiness();
+      });
+    });
+
+    resetTasks.addEventListener("click", () => {
+      taskChecks.forEach((item) => {
+        item.checked = false;
+      });
+      writeTaskState();
+      updateReadiness();
+    });
+
+    updateReadiness();
+
+    const revenueCanvas = document.getElementById("revenueChart");
+    if (revenueCanvas && window.Chart) {
+      new Chart(revenueCanvas, {
+        type: "doughnut",
+        data: {
+          labels: ["Direct display ads", "Sponsored content", "Newsletter sponsors", "Events and partner bundles"],
+          datasets: [{
+            data: [45, 25, 20, 10],
+            backgroundColor: ["#2454d6", "#178a5f", "#b7791f", "#6b7280"],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          plugins: {
+            legend: {
+              position: "bottom"
+            },
+            tooltip: {
+              callbacks: {
+                label: (context) => context.label + ": " + context.parsed + "%"
+              }
+            }
+          },
+          cutout: "64%"
+        }
+      });
+    }
+  </script>
+</body>
+</html>
