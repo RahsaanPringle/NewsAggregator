@@ -182,27 +182,26 @@ server.get('/api/world-headlines', async (_request, response) => {
   }
 
   try {
-    const payload = await getCachedOrFreshRapidApiPayload(WORLD_ENDPOINT_PATH, WORLD_QUERY_PARAMS, apiKey)
-    const normalizedArticles = normalizeRapidNewsArticles(payload)
-
     const pool = await getMysqlPool(mysqlConfig)
     await ensureMySqlArticleTable(pool)
 
-    const { insertedCount, updatedCount } = await saveArticlesToMysql(pool, normalizedArticles, WORLD_ENDPOINT_PATH, WORLD_QUERY_PARAMS)
     const randomArticles = await listRandomArticlesByEndpoint(pool, WORLD_ENDPOINT_PATH, 9)
+
+    void syncWorldHeadlinesArticlesToMysql(pool, apiKey)
 
     response.json({
       source: 'mysql',
       endpointPath: WORLD_ENDPOINT_PATH,
       synced: {
-        attempted: normalizedArticles.length,
-        inserted: insertedCount,
-        updated: updatedCount,
+        attempted: 0,
+        inserted: 0,
+        updated: 0,
+        status: 'scheduled',
       },
       items: randomArticles,
     })
   } catch (error) {
-    response.status(502).json({ error: error.message || 'Unable to sync world headlines.' })
+    response.status(502).json({ error: error.message || 'Unable to load world headlines from MySQL.' })
   }
 })
 
@@ -219,27 +218,26 @@ server.get('/api/news-coverage', async (_request, response) => {
   }
 
   try {
-    const payload = await getCachedOrFreshRapidApiPayload(COVERAGE_ENDPOINT_PATH, COVERAGE_QUERY_PARAMS, apiKey)
-    const normalizedArticles = normalizeRapidNewsArticles(payload)
-
     const pool = await getMysqlPool(mysqlConfig)
     await ensureMySqlArticleTable(pool)
 
-    const { insertedCount, updatedCount } = await saveArticlesToMysql(pool, normalizedArticles, COVERAGE_ENDPOINT_PATH, COVERAGE_QUERY_PARAMS)
     const randomArticles = await listRandomArticlesByEndpoint(pool, COVERAGE_ENDPOINT_PATH, 9)
+
+    void syncNewsCoverageArticlesToMysql(pool, apiKey)
 
     response.json({
       source: 'mysql',
       endpointPath: COVERAGE_ENDPOINT_PATH,
       synced: {
-        attempted: normalizedArticles.length,
-        inserted: insertedCount,
-        updated: updatedCount,
+        attempted: 0,
+        inserted: 0,
+        updated: 0,
+        status: 'scheduled',
       },
       items: randomArticles,
     })
   } catch (error) {
-    response.status(502).json({ error: error.message || 'Unable to sync news coverage.' })
+    response.status(502).json({ error: error.message || 'Unable to load news coverage from MySQL.' })
   }
 })
 
@@ -778,6 +776,58 @@ async function getCachedOrFreshRapidApiPayload(endpointPath, queryParams, apiKey
   }
 
   return payload
+}
+
+async function syncWorldHeadlinesArticlesToMysql(pool, apiKey) {
+  try {
+    const payload = await getCachedOrFreshRapidApiPayload(WORLD_ENDPOINT_PATH, WORLD_QUERY_PARAMS, apiKey)
+    const normalizedArticles = normalizeRapidNewsArticles(payload)
+    const { insertedCount, updatedCount } = await saveArticlesToMysql(
+      pool,
+      normalizedArticles,
+      WORLD_ENDPOINT_PATH,
+      WORLD_QUERY_PARAMS,
+    )
+
+    console.log('[world-headlines] background sync complete', {
+      attempted: normalizedArticles.length,
+      inserted: insertedCount,
+      updated: updatedCount,
+    })
+  } catch (error) {
+    console.error('[world-headlines] background sync failed', {
+      message: error?.message,
+      upstreamStatus: error?.upstreamStatus,
+      upstreamStatusText: error?.upstreamStatusText,
+      upstreamBody: error?.upstreamBody,
+    })
+  }
+}
+
+async function syncNewsCoverageArticlesToMysql(pool, apiKey) {
+  try {
+    const payload = await getCachedOrFreshRapidApiPayload(COVERAGE_ENDPOINT_PATH, COVERAGE_QUERY_PARAMS, apiKey)
+    const normalizedArticles = normalizeRapidNewsArticles(payload)
+    const { insertedCount, updatedCount } = await saveArticlesToMysql(
+      pool,
+      normalizedArticles,
+      COVERAGE_ENDPOINT_PATH,
+      COVERAGE_QUERY_PARAMS,
+    )
+
+    console.log('[news-coverage] background sync complete', {
+      attempted: normalizedArticles.length,
+      inserted: insertedCount,
+      updated: updatedCount,
+    })
+  } catch (error) {
+    console.error('[news-coverage] background sync failed', {
+      message: error?.message,
+      upstreamStatus: error?.upstreamStatus,
+      upstreamStatusText: error?.upstreamStatusText,
+      upstreamBody: error?.upstreamBody,
+    })
+  }
 }
 
 function normalizeRapidNewsArticles(payload) {

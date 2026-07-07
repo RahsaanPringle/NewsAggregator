@@ -52,7 +52,7 @@ function DashboardRowThreeWorldHeadlinesCards() {
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [syncStatus, setSyncStatus] = useState({ attempted: 0, inserted: 0, updated: 0 })
+  const [syncStatus, setSyncStatus] = useState({ attempted: 0, inserted: 0, updated: 0, status: 'idle' })
   const [selectedCommentArticle, setSelectedCommentArticle] = useState(null)
   const [commentsByArticleHash, setCommentsByArticleHash] = useState({})
 
@@ -80,7 +80,7 @@ function DashboardRowThreeWorldHeadlinesCards() {
 
         const payload = await response.json()
         setArticles(Array.isArray(payload.items) ? payload.items : [])
-        setSyncStatus(payload.synced || { attempted: 0, inserted: 0, updated: 0 })
+        setSyncStatus(payload.synced || { attempted: 0, inserted: 0, updated: 0, status: 'idle' })
       } catch (requestError) {
         if (requestError.name !== 'AbortError') {
           setError(requestError.message || 'Unable to load world headlines from the database.')
@@ -235,10 +235,10 @@ function DashboardRowThreeWorldHeadlinesCards() {
       </div>
       <div className="card-body">
         <div className="small text-gray-500 mb-3">
-          Synced from the WORLD topic feed, auto-saved to MySQL, and displayed from random rows in the database.
+          Loaded from random MySQL rows while the WORLD topic feed refreshes in the background.
         </div>
         <div className="small text-gray-600 mb-3">
-          Sync summary: {syncStatus.attempted} attempted, {syncStatus.inserted} inserted, {syncStatus.updated} updated.
+          Background sync: {syncStatus.status === 'scheduled' ? 'scheduled' : 'waiting'}.
         </div>
 
         {error ? (
@@ -246,7 +246,7 @@ function DashboardRowThreeWorldHeadlinesCards() {
             {error}
           </div>
         ) : loading ? (
-          <div className="text-center text-gray-500 py-4">Syncing world headlines and loading database articles...</div>
+          <div className="text-center text-gray-500 py-4">Loading world headlines from the database...</div>
         ) : cards.length > 0 ? (
           <div className="row">{cards}</div>
         ) : (
