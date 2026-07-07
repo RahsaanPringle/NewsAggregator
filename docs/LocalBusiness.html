@@ -88,6 +88,54 @@
     .small-muted {
       color: #66788a;
     }
+
+    .sales-panel {
+      border: 0;
+      border-radius: 1.25rem;
+      box-shadow: 0 12px 28px rgba(16, 42, 67, .08);
+      height: 100%;
+    }
+
+    .price-card {
+      border: 1px solid rgba(16, 42, 67, .12);
+      border-radius: 1rem;
+      height: 100%;
+    }
+
+    .price-card.featured {
+      border-color: var(--lake);
+      box-shadow: 0 14px 32px rgba(13, 110, 253, .14);
+    }
+
+    .pipeline-table select {
+      min-width: 150px;
+    }
+
+    .mermaid {
+      background: #fff;
+      border: 1px solid rgba(16, 42, 67, .12);
+      border-radius: 1rem;
+      padding: 1rem;
+    }
+
+    .benchmark-link {
+      color: inherit;
+      text-decoration: underline;
+      text-decoration-color: rgba(13, 110, 253, .35);
+      text-underline-offset: 3px;
+    }
+
+    .metric-goal {
+      border: 1px solid rgba(16, 42, 67, .12);
+      border-radius: 1rem;
+      background: #fff;
+      padding: 1rem;
+      height: 100%;
+    }
+
+    .metric-goal input {
+      max-width: 130px;
+    }
   </style>
 </head>
 <body>
@@ -190,6 +238,392 @@
       </div>
     </section>
 
+    <section id="ad-plan" class="mb-5">
+      <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
+        <div>
+          <span class="badge text-bg-warning rounded-pill mb-2">Advertiser acquisition plan</span>
+          <h2 class="display-6 fw-bold section-title mb-2">Turn the directory into founding sponsor revenue</h2>
+          <p class="small-muted mb-0">Start with businesses that already benefit from visitors, lake traffic, meals, gifts, and weekend plans.</p>
+        </div>
+        <a href="#sales-pipeline" class="btn btn-primary"><i class="bi bi-arrow-right-circle me-2"></i>Use Pipeline</a>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-md-6 col-xl-3">
+          <div class="card sales-panel">
+            <div class="card-body p-4">
+              <div class="icon-circle mb-3"><i class="bi bi-bullseye"></i></div>
+              <h3 class="h5 fw-bold">1. Lead with local intent</h3>
+              <p class="small-muted mb-0">Sell visibility to people actively looking for where to eat, shop, listen to music, buy gifts, and plan lake days.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="card sales-panel">
+            <div class="card-body p-4">
+              <div class="icon-circle mb-3"><i class="bi bi-gift"></i></div>
+              <h3 class="h5 fw-bold">2. Offer founding deals</h3>
+              <p class="small-muted mb-0">Give the first 10 advertisers lower rates, bonus directory placement, and input on launch categories.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="card sales-panel">
+            <div class="card-body p-4">
+              <div class="icon-circle mb-3"><i class="bi bi-camera"></i></div>
+              <h3 class="h5 fw-bold">3. Remove creative friction</h3>
+              <p class="small-muted mb-0">Include basic ad setup: logo, photo, short offer, button text, and link. Make buying easier than boosting a post.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="card sales-panel">
+            <div class="card-body p-4">
+              <div class="icon-circle mb-3"><i class="bi bi-graph-up-arrow"></i></div>
+              <h3 class="h5 fw-bold">4. Report simply</h3>
+              <p class="small-muted mb-0">Send a monthly recap: days live, placements, views, clicks, and any featured content performance.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 rounded-4 shadow-sm">
+        <div class="card-body p-4">
+          <h3 class="h4 fw-bold mb-3">Best first targets</h3>
+          <div class="row g-3">
+            <div class="col-lg-4">
+              <div class="p-3 rounded-4 bg-light h-100">
+                <strong>Restaurants and coffee shops</strong>
+                <p class="small-muted mb-0">They can promote weekend specials, live music, brunch, lake-day meals, and visitor-friendly offers.</p>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="p-3 rounded-4 bg-light h-100">
+                <strong>Shopping, gifts, and boutiques</strong>
+                <p class="small-muted mb-0">They benefit from discovery, seasonal gift guides, visitor traffic, and "things to do near SML" content.</p>
+              </div>
+            </div>
+            <div class="col-lg-4">
+              <div class="p-3 rounded-4 bg-light h-100">
+                <strong>Lake life and wineries</strong>
+                <p class="small-muted mb-0">They fit destination planning and can buy category sponsorships around weekends, events, and tourism seasons.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="pricing" class="mb-5">
+      <div class="row align-items-end g-4 mb-4">
+        <div class="col-lg-8">
+          <span class="badge text-bg-primary rounded-pill mb-2">Pricing schedule</span>
+          <h2 class="display-6 fw-bold section-title mb-2">Simple starter packages</h2>
+          <p class="small-muted mb-0">
+            Early pricing should be understandable, affordable, and easy to compare. CPM means cost per thousand ad impressions;
+            it is commonly used to compare ad placements across media.
+          </p>
+        </div>
+        <div class="col-lg-4">
+          <canvas id="pricingChart" height="150"></canvas>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-md-6 col-xl-3">
+          <div class="price-card p-4">
+            <span class="badge text-bg-light border mb-3">Entry</span>
+            <h3 class="h5 fw-bold">Directory Boost</h3>
+            <div class="display-6 fw-bold">$49</div>
+            <div class="small-muted mb-3">per month</div>
+            <ul class="small-muted mb-0">
+              <li>Featured directory card</li>
+              <li>One offer or event note</li>
+              <li>Monthly basic performance email</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="price-card featured p-4">
+            <span class="badge text-bg-primary mb-3">Recommended</span>
+            <h3 class="h5 fw-bold">Local Sponsor</h3>
+            <div class="display-6 fw-bold">$149</div>
+            <div class="small-muted mb-3">per month</div>
+            <ul class="small-muted mb-0">
+              <li>Homepage or category ad slot</li>
+              <li>Featured directory placement</li>
+              <li>One creative refresh per month</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="price-card p-4">
+            <span class="badge text-bg-light border mb-3">Seasonal</span>
+            <h3 class="h5 fw-bold">Weekend Feature</h3>
+            <div class="display-6 fw-bold">$249</div>
+            <div class="small-muted mb-3">per month</div>
+            <ul class="small-muted mb-0">
+              <li>Homepage ad plus sponsored card</li>
+              <li>Event/deal inclusion</li>
+              <li>Priority weekend placement</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="price-card p-4">
+            <span class="badge text-bg-light border mb-3">Premium</span>
+            <h3 class="h5 fw-bold">Founding Partner</h3>
+            <div class="display-6 fw-bold">$399</div>
+            <div class="small-muted mb-3">per month</div>
+            <ul class="small-muted mb-0">
+              <li>Multi-placement sponsorship</li>
+              <li>Newsletter or digest mention</li>
+              <li>Quarterly planning call</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="card border-0 rounded-4 shadow-sm">
+        <div class="card-body p-4">
+          <h3 class="h4 fw-bold mb-3">How this compares</h3>
+          <div class="table-responsive">
+            <table class="table align-middle">
+              <thead>
+                <tr>
+                  <th>Channel</th>
+                  <th>Common buying model</th>
+                  <th>Small-business reality</th>
+                  <th>Our angle</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Google search ads</td>
+                  <td>Pay per click</td>
+                  <td>Strong intent, but competitive terms can get expensive and require active setup.</td>
+                  <td>Lower-friction local visibility plus directory content.</td>
+                </tr>
+                <tr>
+                  <td>Facebook/Instagram boosts</td>
+                  <td>CPM or clicks</td>
+                  <td>Easy to start, but attention is mixed with every other social distraction.</td>
+                  <td>Reach readers already browsing local recommendations and lake plans.</td>
+                </tr>
+                <tr>
+                  <td>Local newspaper or magazine</td>
+                  <td>Display ad size, run dates, column inches, or package rate</td>
+                  <td>Trusted format, but print runs are less editable and reporting can be limited.</td>
+                  <td>Digital placement with fast creative changes and simple click reporting.</td>
+                </tr>
+                <tr>
+                  <td>Chamber/directory listing</td>
+                  <td>Annual membership or listing fee</td>
+                  <td>Good credibility, but not always built around daily content.</td>
+                  <td>Pair directory placement with news, events, deals, and visitor intent.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="small-muted mb-0">
+            Benchmark notes:
+            <a class="benchmark-link" href="https://en.wikipedia.org/wiki/Cost_per_mille" target="_blank" rel="noreferrer">CPM</a>
+            is a standard way to compare ad exposure,
+            <a class="benchmark-link" href="https://en.wikipedia.org/wiki/Newspaper_display_advertising" target="_blank" rel="noreferrer">newspaper display ads</a>
+            are traditionally sold by placement size, and
+            <a class="benchmark-link" href="https://en.wikipedia.org/wiki/Column_inch" target="_blank" rel="noreferrer">column inches</a>
+            explain older newspaper pricing mechanics. Use these as comparison language, then validate exact local competitor rates before publishing a final rate card.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section id="metrics-proof" class="mb-5">
+      <div class="row align-items-end g-4 mb-4">
+        <div class="col-lg-8">
+          <span class="badge text-bg-info rounded-pill mb-2">Proof before outreach</span>
+          <h2 class="display-6 fw-bold section-title mb-2">Metrics to show before walking in the door</h2>
+          <p class="small-muted mb-0">
+            The first advertiser conversation should not rely on hope. Bring a one-page proof packet that shows audience,
+            local intent, engagement, and a credible plan for reporting campaign results.
+          </p>
+        </div>
+        <div class="col-lg-4">
+          <div class="card border-0 rounded-4 shadow-sm">
+            <div class="card-body p-4">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong>Proof readiness</strong>
+                <span id="metricsReadinessLabel" class="badge text-bg-primary">0%</span>
+              </div>
+              <div class="progress" role="progressbar" aria-label="Metrics readiness">
+                <div id="metricsReadinessBar" class="progress-bar" style="width: 0%"></div>
+              </div>
+              <p class="small-muted mb-0 mt-3">Update actuals below as the site gains traffic.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 mb-4">
+        <div class="col-md-6 col-xl-3">
+          <div class="metric-goal">
+            <div class="d-flex justify-content-between gap-3 mb-2">
+              <strong>Monthly local page views</strong>
+              <i class="bi bi-eye text-primary"></i>
+            </div>
+            <p class="small-muted mb-3">Show there is a real audience browsing local pages.</p>
+            <div class="d-flex align-items-center gap-2">
+              <input class="form-control form-control-sm metric-input" id="metric-pageviews" type="number" min="0" value="0" data-target="1000">
+              <span class="small-muted">/ 1,000</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="metric-goal">
+            <div class="d-flex justify-content-between gap-3 mb-2">
+              <strong>Directory business clicks</strong>
+              <i class="bi bi-cursor text-primary"></i>
+            </div>
+            <p class="small-muted mb-3">Show readers click from business cards to offers, maps, or websites.</p>
+            <div class="d-flex align-items-center gap-2">
+              <input class="form-control form-control-sm metric-input" id="metric-clicks" type="number" min="0" value="0" data-target="100">
+              <span class="small-muted">/ 100</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="metric-goal">
+            <div class="d-flex justify-content-between gap-3 mb-2">
+              <strong>Email or follow list</strong>
+              <i class="bi bi-envelope-check text-primary"></i>
+            </div>
+            <p class="small-muted mb-3">Show repeat reach through a digest, community alert, or local deals list.</p>
+            <div class="d-flex align-items-center gap-2">
+              <input class="form-control form-control-sm metric-input" id="metric-subscribers" type="number" min="0" value="0" data-target="50">
+              <span class="small-muted">/ 50</span>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="metric-goal">
+            <div class="d-flex justify-content-between gap-3 mb-2">
+              <strong>Example ad report</strong>
+              <i class="bi bi-file-earmark-bar-graph text-primary"></i>
+            </div>
+            <p class="small-muted mb-3">Have a sample report ready before asking for money.</p>
+            <div class="form-check">
+              <input class="form-check-input metric-check" type="checkbox" id="metric-sample-report">
+              <label class="form-check-label" for="metric-sample-report">Sample report drafted</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <div class="card border-0 rounded-4 shadow-sm h-100">
+            <div class="card-body p-4">
+              <h3 class="h4 fw-bold mb-3">Minimum proof packet</h3>
+              <ul class="small-muted mb-0">
+                <li>Traffic snapshot: monthly page views, top pages, and returning visitors if available.</li>
+                <li>Local intent snapshot: searches, directory clicks, event/deal clicks, and category views.</li>
+                <li>Audience fit: Moneta/SML positioning, business categories, and visitor-focused use cases.</li>
+                <li>Sample advertiser report: placement, days live, impressions, clicks, CTR, and creative shown.</li>
+                <li>Founding advertiser offer: discounted first-month package with clear renewal pricing.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="card border-0 rounded-4 shadow-sm h-100">
+            <div class="card-body p-4">
+              <h3 class="h4 fw-bold mb-3">What to instrument in the site</h3>
+              <div class="table-responsive">
+                <table class="table align-middle mb-0">
+                  <thead>
+                    <tr>
+                      <th>Metric</th>
+                      <th>Why advertisers care</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Ad impressions</td>
+                      <td>Shows how many times their placement was displayed.</td>
+                    </tr>
+                    <tr>
+                      <td>Ad clicks</td>
+                      <td>Shows direct action and supports simple CTR reporting.</td>
+                    </tr>
+                    <tr>
+                      <td>Directory clicks</td>
+                      <td>Shows reader intent before paid ads are live.</td>
+                    </tr>
+                    <tr>
+                      <td>Category page views</td>
+                      <td>Helps sell restaurants, shopping, lake life, and events separately.</td>
+                    </tr>
+                    <tr>
+                      <td>Email subscribers</td>
+                      <td>Creates a repeat channel for sponsored digest placements.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="sales-pipeline" class="mb-5">
+      <div class="row g-4 mb-4">
+        <div class="col-lg-5">
+          <span class="badge text-bg-success rounded-pill mb-2">Sales pipeline</span>
+          <h2 class="display-6 fw-bold section-title mb-2">Contact, qualify, close, report</h2>
+          <p class="small-muted mb-0">The pipeline should feel like a helpful local partnership, not a hard sell. Track one next action for every business.</p>
+        </div>
+        <div class="col-lg-7">
+          <pre class="mermaid mb-0">
+flowchart LR
+  A["Verify business details"] --> B["Warm intro or in-person visit"]
+  B --> C["Send one-page offer"]
+  C --> D["Discovery call"]
+  D --> E["Proposal and creative checklist"]
+  E --> F["Payment and launch"]
+  F --> G["Monthly report"]
+  G --> H["Renew, upsell, or pause"]
+          </pre>
+        </div>
+      </div>
+
+      <div class="card border-0 rounded-4 shadow-sm">
+        <div class="card-body p-4">
+          <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
+            <div>
+              <h3 class="h4 fw-bold mb-1">Prospect tracker</h3>
+              <p class="small-muted mb-0">Statuses and notes are saved in this browser with LocalStorage.</p>
+            </div>
+            <button id="resetPipeline" type="button" class="btn btn-outline-secondary"><i class="bi bi-arrow-counterclockwise me-2"></i>Reset Pipeline</button>
+          </div>
+          <div class="table-responsive">
+            <table class="table align-middle pipeline-table">
+              <thead>
+                <tr>
+                  <th>Business</th>
+                  <th>Category</th>
+                  <th>Best opening offer</th>
+                  <th>Status</th>
+                  <th>Next note</th>
+                </tr>
+              </thead>
+              <tbody id="pipelineRows"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="footer-cta p-4 p-lg-5">
       <div class="row align-items-center g-4">
         <div class="col-lg-8">
@@ -203,7 +637,11 @@
     </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script>
+    mermaid.initialize({ startOnLoad: true, theme: "default", securityLevel: "loose" });
+
     const businesses = [
       { name: "The Blackwater Cafe", category: "Restaurant", description: "American restaurant with a local Smith Mountain Lake feel.", icon: "bi-cup-hot" },
       { name: "La Casa Toscana", category: "Restaurant", description: "Italian dining option serving the lake community.", icon: "bi-egg-fried" },
@@ -227,9 +665,27 @@
     const grid = document.getElementById('businessGrid');
     const filters = document.getElementById('categoryFilters');
     const searchInput = document.getElementById('searchInput');
+    const pipelineRows = document.getElementById('pipelineRows');
+    const resetPipeline = document.getElementById('resetPipeline');
+    const pipelineStorageKey = 'localBusinessAdPipeline';
+    const metricsStorageKey = 'localBusinessMetricsProof';
+    const pipelineStatuses = ['Research', 'Contact next', 'Contacted', 'Interested', 'Proposal sent', 'Won', 'Not now'];
+    const metricInputs = Array.from(document.querySelectorAll('.metric-input'));
+    const metricChecks = Array.from(document.querySelectorAll('.metric-check'));
+    const metricsReadinessBar = document.getElementById('metricsReadinessBar');
+    const metricsReadinessLabel = document.getElementById('metricsReadinessLabel');
     let activeCategory = 'All';
 
     const categories = ['All', ...new Set(businesses.map(b => b.category))];
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
 
     function renderFilters() {
       filters.innerHTML = categories.map(category => `
@@ -281,9 +737,179 @@
       `;
     }
 
+    function getOpeningOffer(business) {
+      if (business.category === 'Restaurant' || business.category === 'Coffee') {
+        return 'Weekend Feature';
+      }
+
+      if (business.category === 'Lake Life' || business.category === 'Winery') {
+        return 'Founding Partner';
+      }
+
+      return 'Local Sponsor';
+    }
+
+    function readPipelineState() {
+      try {
+        return JSON.parse(localStorage.getItem(pipelineStorageKey) || '{}');
+      } catch (_error) {
+        return {};
+      }
+    }
+
+    function writePipelineState(state) {
+      localStorage.setItem(pipelineStorageKey, JSON.stringify(state));
+    }
+
+    function readMetricsState() {
+      try {
+        return JSON.parse(localStorage.getItem(metricsStorageKey) || '{}');
+      } catch (_error) {
+        return {};
+      }
+    }
+
+    function writeMetricsState() {
+      const state = {};
+      metricInputs.forEach((input) => {
+        state[input.id] = input.value;
+      });
+      metricChecks.forEach((input) => {
+        state[input.id] = input.checked;
+      });
+      localStorage.setItem(metricsStorageKey, JSON.stringify(state));
+    }
+
+    function updateMetricsReadiness() {
+      const numericScores = metricInputs.map((input) => {
+        const target = Number(input.dataset.target || 1);
+        const actual = Number(input.value || 0);
+        return Math.min(actual / target, 1);
+      });
+      const checkboxScores = metricChecks.map((input) => input.checked ? 1 : 0);
+      const scores = [...numericScores, ...checkboxScores];
+      const percent = scores.length ? Math.round((scores.reduce((sum, value) => sum + value, 0) / scores.length) * 100) : 0;
+
+      metricsReadinessBar.style.width = `${percent}%`;
+      metricsReadinessLabel.textContent = `${percent}%`;
+    }
+
+    function hydrateMetricsState() {
+      const state = readMetricsState();
+      metricInputs.forEach((input) => {
+        if (state[input.id] !== undefined) {
+          input.value = state[input.id];
+        }
+
+        input.addEventListener('input', () => {
+          writeMetricsState();
+          updateMetricsReadiness();
+        });
+      });
+      metricChecks.forEach((input) => {
+        input.checked = Boolean(state[input.id]);
+        input.addEventListener('change', () => {
+          writeMetricsState();
+          updateMetricsReadiness();
+        });
+      });
+      updateMetricsReadiness();
+    }
+
+    function renderPipeline() {
+      const state = readPipelineState();
+
+      pipelineRows.innerHTML = businesses.map((business, index) => {
+        const key = `business-${index}`;
+        const saved = state[key] || {};
+        const status = saved.status || 'Research';
+        const note = saved.note || '';
+
+        return `
+          <tr data-key="${key}">
+            <td><strong>${escapeHtml(business.name)}</strong></td>
+            <td>${escapeHtml(business.category)}</td>
+            <td>${escapeHtml(getOpeningOffer(business))}</td>
+            <td>
+              <select class="form-select form-select-sm pipeline-status">
+                ${pipelineStatuses.map((item) => `<option value="${item}" ${item === status ? 'selected' : ''}>${item}</option>`).join('')}
+              </select>
+            </td>
+            <td>
+              <input class="form-control form-control-sm pipeline-note" type="text" value="${escapeHtml(note)}" placeholder="Next action or contact note">
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      document.querySelectorAll('#pipelineRows tr').forEach((row) => {
+        const key = row.dataset.key;
+        const statusInput = row.querySelector('.pipeline-status');
+        const noteInput = row.querySelector('.pipeline-note');
+
+        function saveRow() {
+          const nextState = readPipelineState();
+          nextState[key] = {
+            status: statusInput.value,
+            note: noteInput.value.trim(),
+          };
+          writePipelineState(nextState);
+        }
+
+        statusInput.addEventListener('change', saveRow);
+        noteInput.addEventListener('input', saveRow);
+      });
+    }
+
+    function renderPricingChart() {
+      const canvas = document.getElementById('pricingChart');
+      if (!canvas || !window.Chart) {
+        return;
+      }
+
+      new Chart(canvas, {
+        type: 'bar',
+        data: {
+          labels: ['Boost', 'Sponsor', 'Feature', 'Partner'],
+          datasets: [{
+            label: 'Monthly price',
+            data: [49, 149, 249, 399],
+            backgroundColor: ['#8ec5ff', '#0d6efd', '#f5b942', '#102a43'],
+            borderRadius: 8,
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (context) => `$${context.parsed.y} per month`
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (value) => `$${value}`
+              }
+            }
+          }
+        }
+      });
+    }
+
     searchInput.addEventListener('input', renderBusinesses);
+    resetPipeline.addEventListener('click', () => {
+      localStorage.removeItem(pipelineStorageKey);
+      renderPipeline();
+    });
+
     renderFilters();
     renderBusinesses();
+    renderPipeline();
+    hydrateMetricsState();
+    renderPricingChart();
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
