@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { openNewsPopup } from '../utils/openNewsPopup'
+import { buildArticlePath } from '../utils/articleLinks'
 import './DashboardHeroArticles.css'
 
 function getArticleImageUrl(article) {
@@ -49,29 +49,16 @@ function getArticleKey(article, index) {
   return article.article_hash || article.article_id || article.link || `${article.title}-${index}`
 }
 
-function handleArticleClick(event, articleLink) {
-  if (!articleLink) {
-    return
-  }
-
-  event.preventDefault()
-  event.stopPropagation()
-  openNewsPopup(articleLink)
-}
-
 function DashboardHeroTile({ article, featured }) {
   const imageUrl = getArticleImageUrl(article)
   const previewText = getArticlePreviewText(article)
   const category = getArticleCategory(article)
   const title = article?.title || 'Untitled article'
+  const articlePath = buildArticlePath(article?.article_hash)
 
   return (
     <article className={featured ? 'news-hero-tile news-hero-tile-featured' : 'news-hero-tile'}>
-      <a
-        href={article.link || '#'}
-        className="news-hero-link"
-        onClick={(event) => handleArticleClick(event, article.link)}
-      >
+      <a href={articlePath} className="news-hero-link">
         {imageUrl ? (
           <img src={imageUrl} alt={title} className="news-hero-image" loading={featured ? 'eager' : 'lazy'} />
         ) : (

@@ -86,6 +86,8 @@ function ArticleCommentsPanel({
   startComposerOpen = false,
   initialReplyCommentId = null,
   onCommentCreated,
+  showCloseButton = true,
+  className = 'card shadow mt-4 border-left-success',
 }) {
   const [comments, setComments] = useState([])
   const [loading, setLoading] = useState(true)
@@ -263,15 +265,17 @@ function ArticleCommentsPanel({
   }
 
   return (
-    <div className="card shadow mt-4 border-left-success">
+    <div className={className}>
       <div className="card-header py-3 d-flex justify-content-between align-items-center">
         <div>
           <h6 className="m-0 font-weight-bold text-success">Comments</h6>
           <div className="small text-gray-500">{articleTitle || articleHash}</div>
         </div>
-        <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onClose}>
-          Close
-        </button>
+        {showCloseButton ? (
+          <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onClose}>
+            Close
+          </button>
+        ) : null}
       </div>
 
       <div className="card-body">

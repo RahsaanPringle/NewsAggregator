@@ -64,6 +64,57 @@ server.get('/api/hero-articles', (request, response) => {
   }
 })
 
+server.get('/api/articles/:articleHash', async (request, response) => {
+  const articleHash = normalizeNullableString(request.params.articleHash, 64)
+  const requestedLimit = Number(request.query.relatedLimit || 5)
+  const relatedLimit = Math.max(1, Math.min(Number.isFinite(requestedLimit) ? requestedLimit : 5, 12))
+
+  if (!articleHash) {
+    response.status(400).json({ error: 'Missing article hash.' })
+    return
+  }
+
+  const mysqlConfig = getMysqlConfig()
+  let mysqlError = null
+
+  if (mysqlConfig) {
+    try {
+      const pool = await getMysqlPool(mysqlConfig)
+      await ensureMySqlArticleTable(pool)
+
+      const article = await getMySqlArticleByHash(pool, articleHash)
+      if (article) {
+        const relatedItems = await listRelatedMySqlArticles(pool, article, relatedLimit)
+        response.json({
+          source: 'mysql',
+          item: article,
+          relatedItems,
+        })
+        return
+      }
+    } catch (error) {
+      mysqlError = error
+    }
+  }
+
+  const cachedArticle = getCachedArticleByHash(articleHash)
+  if (!cachedArticle) {
+    if (mysqlError) {
+      response.status(502).json({ error: mysqlError.message || 'Unable to load article from MySQL.' })
+      return
+    }
+
+    response.status(404).json({ error: 'Article was not found.' })
+    return
+  }
+
+  response.json({
+    source: 'cache',
+    item: cachedArticle,
+    relatedItems: listRelatedCachedArticles(cachedArticle, relatedLimit),
+  })
+})
+
 server.get('/api/news', async (request, response) => {
   const endpointPath = normalizeEndpointPath(request.query.endpointPath)
 
@@ -1161,6 +1212,7 @@ function listNewestRandomCachedArticles(limit, poolLimit) {
       normalizeRapidNewsArticles(entry.payload).forEach((article) => {
         articles.push({
           ...article,
+          article_hash: computeArticleHash(article),
           endpoint_path: normalizeEndpointPath(entry.endpointPath),
           query_params: isPlainObject(entry.queryParams) ? entry.queryParams : {},
           cache_collection: collectionName,
@@ -1178,6 +1230,141 @@ function listNewestRandomCachedArticles(limit, poolLimit) {
   return shuffleArticles(newestDistinctArticles)
     .slice(0, limit)
     .map(({ sort_timestamp, ...article }) => article)
+}
+
+async function getMySqlArticleByHash(pool, articleHash) {
+  const [rows] = await pool.query(
+    `SELECT
+      article_hash,
+      article_id,
+      title,
+      link,
+      snippet,
+      source_name,
+      published_datetime_utc,
+      authors_json,
+      endpoint_path,
+      query_params_json,
+      raw_article_json,
+      created_at,
+      updated_at
+    FROM news_articles
+    WHERE article_hash = ?
+    LIMIT 1`,
+    [articleHash],
+  )
+
+  return rows.length ? normalizeMySqlArticleRow(rows[0]) : null
+}
+
+async function listRelatedMySqlArticles(pool, article, limit) {
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 5, 12))
+  const sampleLimit = Math.max(safeLimit * 4, safeLimit)
+  const [rows] = await pool.query(
+    `SELECT
+      article_hash,
+      article_id,
+      title,
+      link,
+      snippet,
+      source_name,
+      published_datetime_utc,
+      authors_json,
+      endpoint_path,
+      query_params_json,
+      raw_article_json,
+      created_at,
+      updated_at
+    FROM news_articles
+    WHERE article_hash <> ?
+    ORDER BY
+      CASE WHEN endpoint_path = ? THEN 0 ELSE 1 END,
+      published_datetime_utc DESC,
+      updated_at DESC
+    LIMIT ${sampleLimit}`,
+    [article.article_hash, article.endpoint_path || ''],
+  )
+
+  const distinctArticles = []
+  const seenArticleKeys = new Set([getDistinctArticleKey(article)])
+
+  for (const row of rows) {
+    const relatedArticle = normalizeMySqlArticleRow(row)
+    const articleKey = getDistinctArticleKey(relatedArticle)
+
+    if (seenArticleKeys.has(articleKey)) {
+      continue
+    }
+
+    seenArticleKeys.add(articleKey)
+    distinctArticles.push(relatedArticle)
+
+    if (distinctArticles.length >= safeLimit) {
+      break
+    }
+  }
+
+  return distinctArticles
+}
+
+function getCachedArticleByHash(articleHash) {
+  return listAllCachedArticles().find((article) => article.article_hash === articleHash) || null
+}
+
+function listRelatedCachedArticles(article, limit) {
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 5, 12))
+  const seenArticleKeys = new Set([getDistinctArticleKey(article)])
+
+  return listAllCachedArticles()
+    .filter((candidate) => candidate.article_hash !== article.article_hash)
+    .sort((firstArticle, secondArticle) => {
+      const endpointComparison = Number(secondArticle.endpoint_path === article.endpoint_path) - Number(firstArticle.endpoint_path === article.endpoint_path)
+      if (endpointComparison !== 0) {
+        return endpointComparison
+      }
+
+      return getArticleSortTimestamp(secondArticle, secondArticle.cache_fetched_at) - getArticleSortTimestamp(firstArticle, firstArticle.cache_fetched_at)
+    })
+    .filter((candidate) => {
+      const articleKey = getDistinctArticleKey(candidate)
+      if (seenArticleKeys.has(articleKey)) {
+        return false
+      }
+
+      seenArticleKeys.add(articleKey)
+      return true
+    })
+    .slice(0, safeLimit)
+}
+
+function listAllCachedArticles() {
+  const cacheState = router.db.getState()
+  const articles = []
+
+  Object.entries(cacheState).forEach(([collectionName, entries]) => {
+    if (!Array.isArray(entries)) {
+      return
+    }
+
+    entries.forEach((entry) => {
+      if (!entry?.payload || !entry?.endpointPath) {
+        return
+      }
+
+      normalizeRapidNewsArticles(entry.payload).forEach((article) => {
+        articles.push({
+          ...article,
+          article_hash: computeArticleHash(article),
+          endpoint_path: normalizeEndpointPath(entry.endpointPath),
+          query_params: isPlainObject(entry.queryParams) ? entry.queryParams : {},
+          cache_collection: collectionName,
+          cache_fetched_at: entry.fetchedAt || null,
+        })
+      })
+    })
+  })
+
+  return distinctArticlesByCanonicalKey(articles)
 }
 
 function distinctArticlesByCanonicalKey(articles) {

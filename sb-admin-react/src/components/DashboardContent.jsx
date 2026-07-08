@@ -4,11 +4,11 @@ import PageHeading from './PageHeading'
 
 function DashboardContent({ scriptsReady }) {
   return (
-    <div className="container-fluid">
+    <>
       <PageHeading />
       <DashboardHeroArticles />
       <DashboardRows scriptsReady={scriptsReady} />
-    </div>
+    </>
   )
 }
 

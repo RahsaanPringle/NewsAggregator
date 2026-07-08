@@ -3,7 +3,9 @@ import DashboardContent from './components/DashboardContent'
 import Footer from './components/Footer'
 import Overlays from './components/Overlays'
 import Sidebar from './components/Sidebar'
+import SingleArticleView from './components/SingleArticleView'
 import Topbar from './components/Topbar'
+import { getArticleHashFromPath } from './utils/articleLinks'
 
 const coreScripts = [
   '/vendor/jquery/jquery.min.js',
@@ -84,6 +86,7 @@ function destroyExistingCharts() {
 
 function App() {
   const [scriptsReady, setScriptsReady] = useState(false)
+  const [pathname, setPathname] = useState(() => window.location.pathname)
 
   useEffect(() => {
     document.body.id = 'page-top'
@@ -125,6 +128,20 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    function handlePopState() {
+      setPathname(window.location.pathname)
+    }
+
+    window.addEventListener('popstate', handlePopState)
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState)
+    }
+  }, [])
+
+  const articleHash = getArticleHashFromPath(pathname)
+
   return (
     <>
       <div id="wrapper">
@@ -133,7 +150,13 @@ function App() {
         <div id="content-wrapper" className="d-flex flex-column">
           <div id="content">
             <Topbar />
-            <DashboardContent scriptsReady={scriptsReady} />
+            <div className="container-fluid">
+              {articleHash ? (
+                <SingleArticleView articleHash={articleHash} />
+              ) : (
+                <DashboardContent scriptsReady={scriptsReady} />
+              )}
+            </div>
           </div>
 
           <Footer />

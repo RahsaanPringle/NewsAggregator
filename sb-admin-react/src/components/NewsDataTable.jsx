@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ArticleCommentsPanel from './ArticleCommentsPanel'
 import AddCommentButton from './AddCommentButton'
+import { buildArticlePath } from '../utils/articleLinks'
 import { openNewsPopup } from '../utils/openNewsPopup'
 
 const DEFAULT_COLUMNS = ['Headline', 'Source', 'Published', 'Authors']
@@ -387,8 +388,13 @@ function NewsDataTable({
               <div className="small text-gray-500">{article.snippet}</div>
               {isSaved ? (
                 <div className="mt-2 pt-2 border-top">
-                  <div className="small text-success font-weight-bold">
-                    {articleComments.length ? `${articleComments.length} comment${articleComments.length === 1 ? '' : 's'}` : 'No comments yet'}
+                  <div className="small text-success font-weight-bold d-flex align-items-center gap-2">
+                    <span>{articleComments.length ? `${articleComments.length} comment${articleComments.length === 1 ? '' : 's'}` : 'No comments yet'}</span>
+                    {articleComments.length > 0 && articleHash ? (
+                      <a href={buildArticlePath(articleHash)} className="small font-weight-normal text-primary ml-2">
+                        View Article →
+                      </a>
+                    ) : null}
                   </div>
                   {previewComments.length ? (
                     <div className="mt-1">
