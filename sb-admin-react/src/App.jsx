@@ -145,7 +145,7 @@ function App() {
   return (
     <>
       <div id="wrapper">
-        <Sidebar />
+        {!articleHash ? <Sidebar /> : null}
 
         <div id="content-wrapper" className="d-flex flex-column">
           <div id="content">

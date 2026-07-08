@@ -348,19 +348,21 @@ function ArticleCommentsPanel({
                       </div>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    className="btn btn-link btn-sm p-0"
-                    onClick={() => {
-                      setSubmitError('')
-                      setLocationStatus('')
-                      setBody('')
-                      setShowComposer(false)
-                      setReplyTarget(comment)
-                    }}
-                  >
-                    Reply
-                  </button>
+                  {comment.parent_comment_id === null && Number(comment.user?.id || 0) !== getCurrentCommentUserId() ? (
+                    <button
+                      type="button"
+                      className="btn btn-link btn-sm p-0"
+                      onClick={() => {
+                        setSubmitError('')
+                        setLocationStatus('')
+                        setBody('')
+                        setShowComposer(false)
+                        setReplyTarget(comment)
+                      }}
+                    >
+                      Reply
+                    </button>
+                  ) : null}
                 </div>
                 <p className="mb-0 text-gray-800">{comment.body}</p>
 
