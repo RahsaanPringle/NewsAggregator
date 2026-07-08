@@ -1,6 +1,5 @@
 import { buildArticlePath } from '../utils/articleLinks'
 import ArticleCommentsPanel from './ArticleCommentsPanel'
-import AddCommentButton from './AddCommentButton'
 
 function SavedArticleCommentSection({
   articleHash,
@@ -24,7 +23,23 @@ function SavedArticleCommentSection({
         </div>
       ) : null}
       <div className="small text-success font-weight-bold">
-        {articleComments.length ? `${articleComments.length} comment${articleComments.length === 1 ? '' : 's'}` : 'No comments yet'}
+        {articleComments.length ? (
+          `${articleComments.length} comment${articleComments.length === 1 ? '' : 's'}`
+        ) : (
+          <button
+            type="button"
+            className="btn btn-link btn-sm p-0 text-success font-weight-bold"
+            onClick={() => {
+              onOpenComment({
+                articleHash,
+                articleTitle,
+                startComposerOpen: true,
+              })
+            }}
+          >
+            No comments yet — Add first comment
+          </button>
+        )}
       </div>
 
       {!isCommentsPanelOpen && featuredComment ? (
