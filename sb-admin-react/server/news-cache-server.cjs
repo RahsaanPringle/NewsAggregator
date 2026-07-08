@@ -47,6 +47,23 @@ server.get('/health', (_request, response) => {
   response.json({ status: 'ok' })
 })
 
+server.get('/api/hero-articles', (request, response) => {
+  const requestedLimit = Number(request.query.limit || 5)
+  const limit = Math.max(1, Math.min(Number.isFinite(requestedLimit) ? requestedLimit : 5, 12))
+  const requestedPoolLimit = Number(request.query.poolLimit || 80)
+  const poolLimit = Math.max(limit, Math.min(Number.isFinite(requestedPoolLimit) ? requestedPoolLimit : 80, 500))
+
+  try {
+    response.json({
+      source: 'cache',
+      selection: 'newest-randomized',
+      items: listNewestRandomCachedArticles(limit, poolLimit),
+    })
+  } catch (error) {
+    response.status(502).json({ error: error.message || 'Unable to load hero articles from cache.' })
+  }
+})
+
 server.get('/api/news', async (request, response) => {
   const endpointPath = normalizeEndpointPath(request.query.endpointPath)
 
@@ -1125,6 +1142,98 @@ async function listRandomArticlesByEndpoint(pool, endpointPath, limit) {
   }
 
   return distinctArticles
+}
+
+function listNewestRandomCachedArticles(limit, poolLimit) {
+  const cacheState = router.db.getState()
+  const articles = []
+
+  Object.entries(cacheState).forEach(([collectionName, entries]) => {
+    if (!Array.isArray(entries)) {
+      return
+    }
+
+    entries.forEach((entry) => {
+      if (!entry?.payload || !entry?.endpointPath) {
+        return
+      }
+
+      normalizeRapidNewsArticles(entry.payload).forEach((article) => {
+        articles.push({
+          ...article,
+          endpoint_path: normalizeEndpointPath(entry.endpointPath),
+          query_params: isPlainObject(entry.queryParams) ? entry.queryParams : {},
+          cache_collection: collectionName,
+          cache_fetched_at: entry.fetchedAt || null,
+          sort_timestamp: getArticleSortTimestamp(article, entry.fetchedAt),
+        })
+      })
+    })
+  })
+
+  const newestDistinctArticles = distinctArticlesByCanonicalKey(articles)
+    .sort((firstArticle, secondArticle) => secondArticle.sort_timestamp - firstArticle.sort_timestamp)
+    .slice(0, poolLimit)
+
+  return shuffleArticles(newestDistinctArticles)
+    .slice(0, limit)
+    .map(({ sort_timestamp, ...article }) => article)
+}
+
+function distinctArticlesByCanonicalKey(articles) {
+  const distinctArticles = []
+  const seenArticleKeys = new Set()
+
+  articles.forEach((article) => {
+    const articleKey = getDistinctArticleKey(article)
+
+    if (!articleKey || seenArticleKeys.has(articleKey)) {
+      return
+    }
+
+    seenArticleKeys.add(articleKey)
+    distinctArticles.push(article)
+  })
+
+  return distinctArticles
+}
+
+function shuffleArticles(articles) {
+  const shuffledArticles = [...articles]
+
+  for (let index = shuffledArticles.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1))
+    const currentArticle = shuffledArticles[index]
+    shuffledArticles[index] = shuffledArticles[randomIndex]
+    shuffledArticles[randomIndex] = currentArticle
+  }
+
+  return shuffledArticles
+}
+
+function getArticleSortTimestamp(article, fallbackValue) {
+  const candidates = [
+    article?.published_datetime_utc,
+    article?.published_at,
+    article?.date,
+    article?.timestamp,
+    fallbackValue,
+  ]
+
+  for (const candidate of candidates) {
+    const normalized = normalizeNullableString(candidate, 64)
+    if (!normalized) {
+      continue
+    }
+
+    const numericValue = Number(normalized)
+    const parsedDate = new Date(Number.isFinite(numericValue) ? numericValue : normalized)
+    if (!Number.isNaN(parsedDate.getTime())) {
+      return parsedDate.getTime()
+    }
+  }
+
+  return 0
 }
 
 function getDistinctArticleKey(article) {
