@@ -57,6 +57,8 @@ function DashboardCommentsWithResponsesCard() {
 
   return (
     <DashboardStatCard
+      jsx="DashboardCommentsWithResponsesCard"
+      componentClass="dashboard-comments-with-responses-card"
       borderClass="border-left-info"
       titleClass="text-info"
       title="Comments with Responses"

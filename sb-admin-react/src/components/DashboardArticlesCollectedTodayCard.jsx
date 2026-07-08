@@ -57,6 +57,8 @@ function DashboardArticlesCollectedTodayCard() {
 
   return (
     <DashboardStatCard
+      jsx="DashboardArticlesCollectedTodayCard"
+      componentClass="dashboard-articles-collected-today-card"
       borderClass="border-left-primary"
       titleClass="text-primary"
       title="Articles Collected Today"

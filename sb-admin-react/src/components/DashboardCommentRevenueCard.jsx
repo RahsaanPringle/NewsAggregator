@@ -61,6 +61,8 @@ function DashboardCommentRevenueCard() {
 
   return (
     <DashboardStatCard
+      jsx="DashboardCommentRevenueCard"
+      componentClass="dashboard-comment-revenue-card"
       borderClass="border-left-success"
       titleClass="text-success"
       title="Comment Revenue"

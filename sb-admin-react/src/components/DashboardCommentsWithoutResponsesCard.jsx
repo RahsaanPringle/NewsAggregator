@@ -57,6 +57,8 @@ function DashboardCommentsWithoutResponsesCard() {
 
   return (
     <DashboardStatCard
+      jsx="DashboardCommentsWithoutResponsesCard"
+      componentClass="dashboard-comments-without-responses-card"
       borderClass="border-left-warning"
       titleClass="text-warning"
       title="Comments without Responses"
