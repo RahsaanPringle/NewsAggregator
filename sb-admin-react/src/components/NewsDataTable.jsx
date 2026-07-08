@@ -445,17 +445,10 @@ function NewsDataTable({
                 >
                   {isSaving ? 'Saving…' : 'Add to Database'}
                 </button>
-              ) : isSaved && articleHash ? (
-                <div className="btn-group btn-group-sm" role="group" aria-label="Saved article actions">
-                  <span className="btn btn-sm btn-outline-success disabled">Saved</span>
-                  <AddCommentButton
-                    className="btn btn-sm btn-outline-success"
-                    data-news-action="comment"
-                    data-row-index={index}
-                  >
-                    Add Comment
-                  </AddCommentButton>
-                </div>
+              ) : isSaved && articleHash && articleComments.length > 0 ? (
+                <a href={buildArticlePath(articleHash)} className="btn btn-sm btn-outline-success">
+                  View Article
+                </a>
               ) : statusLoading ? (
                 <span className="small text-gray-500">Checking…</span>
               ) : (

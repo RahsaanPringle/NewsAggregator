@@ -1,3 +1,4 @@
+import { buildArticlePath } from '../utils/articleLinks'
 import ArticleCommentsPanel from './ArticleCommentsPanel'
 import AddCommentButton from './AddCommentButton'
 
@@ -15,21 +16,13 @@ function SavedArticleCommentSection({
 
   return (
     <div className="mb-3">
-      <div className="btn-group btn-group-sm mb-2" role="group" aria-label="Saved article actions">
-        <span className="btn btn-sm btn-outline-success disabled">Saved</span>
-        <AddCommentButton
-          className="btn btn-sm btn-outline-success"
-          onClick={() => {
-            onOpenComment({
-              articleHash,
-              articleTitle,
-              startComposerOpen: true,
-            })
-          }}
-        >
-          Add Comment
-        </AddCommentButton>
-      </div>
+      {articleComments.length > 0 ? (
+        <div className="btn-group btn-group-sm mb-2" role="group" aria-label="Saved article actions">
+          <a href={buildArticlePath(articleHash)} className="btn btn-sm btn-outline-success">
+            View Article Comments
+          </a>
+        </div>
+      ) : null}
       <div className="small text-success font-weight-bold">
         {articleComments.length ? `${articleComments.length} comment${articleComments.length === 1 ? '' : 's'}` : 'No comments yet'}
       </div>

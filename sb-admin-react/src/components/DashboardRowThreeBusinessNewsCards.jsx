@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import SavedArticleCommentSection from './SavedArticleCommentSection'
 import { buildArticlePath } from '../utils/articleLinks'
+import { openNewsPopup } from '../utils/openNewsPopup'
 
 const MYSQL_API_BASE_URL = String(import.meta.env.VITE_NEWS_API_BASE_URL || '').trim().replace(/\/+$/, '')
 
@@ -168,13 +169,19 @@ function DashboardRowThreeBusinessNewsCards() {
         const imageUrl = getArticleImageUrl(article)
         const hasComments = articleComments.length > 0
         const columnClassName = hasComments ? 'col-12 mb-4' : 'col-xl-4 col-lg-4 col-md-6 mb-4'
-        const articlePath = buildArticlePath(articleHash)
 
         return (
           <div className={columnClassName} key={articleHash || article.article_id || `${article.title}-${index}`}>
             <div className="card shadow h-100 border-left-success">
               {imageUrl ? (
-                <a href={articlePath}>
+                <a
+                  href={article.link}
+                  onClick={(event) => {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    openNewsPopup(article.link)
+                  }}
+                >
                   <img
                     src={imageUrl}
                     className="card-img-top"
@@ -187,7 +194,15 @@ function DashboardRowThreeBusinessNewsCards() {
               <div className="card-body d-flex flex-column">
                 <div className="small text-gray-500 mb-2">{article.source_name || 'Unknown source'}</div>
                 <h6 className="font-weight-bold mb-2">
-                  <a href={articlePath} className="text-primary">
+                  <a
+                    href={article.link}
+                    onClick={(event) => {
+                      event.preventDefault()
+                      event.stopPropagation()
+                      openNewsPopup(article.link)
+                    }}
+                    className="text-primary"
+                  >
                     {article.title || 'Untitled article'}
                   </a>
                 </h6>
