@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.35821.62 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "News-Net-API", "News-Net-API.csproj", "{69693B39-06B4-DDA0-BC7D-A56CB9011E63}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{69693B39-06B4-DDA0-BC7D-A56CB9011E63}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{69693B39-06B4-DDA0-BC7D-A56CB9011E63}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{69693B39-06B4-DDA0-BC7D-A56CB9011E63}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{69693B39-06B4-DDA0-BC7D-A56CB9011E63}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {6500904B-ADD6-420B-A6E7-E8062E79932F}
+	EndGlobalSection
+EndGlobal
