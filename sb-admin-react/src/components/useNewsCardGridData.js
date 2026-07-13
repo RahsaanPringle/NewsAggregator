@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-
-const MYSQL_API_BASE_URL = String(import.meta.env.VITE_NEWS_API_BASE_URL || '').trim().replace(/\/+$/, '')
+import { buildNewsApiUrl } from '../utils/newsApi'
 
 function normalizeArticles(payload) {
   if (Array.isArray(payload?.data)) {
@@ -10,18 +9,14 @@ function normalizeArticles(payload) {
   return payload?.data?.top_news?.all_articles ?? payload?.data?.all_articles ?? []
 }
 
-function buildNewsApiUrl(endpointPath, queryParams = {}) {
+function buildNewsRequestUrl(endpointPath, queryParams = {}) {
   const searchParams = new URLSearchParams({ endpointPath })
 
   Object.entries(queryParams).forEach(([key, value]) => {
     searchParams.append(key, String(value))
   })
 
-  return `/api/news?${searchParams.toString()}`
-}
-
-function buildMysqlApiUrl(routePath) {
-  return MYSQL_API_BASE_URL ? `${MYSQL_API_BASE_URL}${routePath}` : routePath
+  return buildNewsApiUrl(`/api/news?${searchParams.toString()}`)
 }
 
 function getSavedArticleHashes(articleHashes, savedArticleHashes) {
@@ -53,7 +48,7 @@ function useNewsCardGridData({ endpointPath, queryParams, loadErrorLabel }) {
   const [selectedCommentArticle, setSelectedCommentArticle] = useState(null)
   const [commentsByArticleHash, setCommentsByArticleHash] = useState({})
 
-  const requestUrl = useMemo(() => buildNewsApiUrl(endpointPath, queryParams), [endpointPath, queryParams])
+  const requestUrl = useMemo(() => buildNewsRequestUrl(endpointPath, queryParams), [endpointPath, queryParams])
 
   useEffect(() => {
     const abortController = new AbortController()
@@ -111,7 +106,7 @@ function useNewsCardGridData({ endpointPath, queryParams, loadErrorLabel }) {
       }
 
       try {
-        const response = await fetch(buildMysqlApiUrl('/api/mysql/articles/status'), {
+        const response = await fetch(buildNewsApiUrl('/api/mysql/articles/status'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -163,7 +158,7 @@ function useNewsCardGridData({ endpointPath, queryParams, loadErrorLabel }) {
       try {
         const summaryEntries = await Promise.all(
           savedHashes.map(async (articleHash) => {
-            const response = await fetch(buildMysqlApiUrl(`/api/articles/${articleHash}/comments`), {
+            const response = await fetch(buildNewsApiUrl(`/api/articles/${articleHash}/comments`), {
               method: 'GET',
               headers: {
                 'Content-Type': 'application/json',
@@ -204,7 +199,7 @@ function useNewsCardGridData({ endpointPath, queryParams, loadErrorLabel }) {
     setSavingArticleHashes((previousState) => new Set(previousState).add(articleHash))
 
     try {
-      const response = await fetch(buildMysqlApiUrl('/api/mysql/articles'), {
+      const response = await fetch(buildNewsApiUrl('/api/mysql/articles'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

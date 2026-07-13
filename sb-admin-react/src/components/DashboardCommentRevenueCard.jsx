@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { buildNewsApiUrl } from '../utils/newsApi'
 import DashboardStatCard from './DashboardStatCard'
 
 function formatCurrency(value) {
@@ -22,7 +23,7 @@ function DashboardCommentRevenueCard() {
       setError('')
 
       try {
-        const response = await fetch('/api/mysql/comments/revenue', {
+        const response = await fetch(buildNewsApiUrl('/api/mysql/comments/revenue'), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

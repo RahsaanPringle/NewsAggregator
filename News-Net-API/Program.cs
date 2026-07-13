@@ -88,11 +88,8 @@ app.MapGet("/api/business-news", async (NewsRepository repository, RapidNewsServ
         return Results.Json(new { enabled = false, items = Array.Empty<object>(), error = "MySQL is not configured." }, statusCode: 503);
     }
 
-    var payload = await rapidNews.GetCachedOrFreshPayloadAsync("/business", new Dictionary<string, string> { ["lr"] = "en-US" });
-    var articles = NormalizeRapidNewsArticles(payload);
-    var sync = await repository.SaveArticlesAsync(articles, "/business", new Dictionary<string, string> { ["lr"] = "en-US" });
-    var items = await repository.ListRandomArticlesByEndpointAsync("/business", 9);
-    return Results.Json(new { enabled = true, source = "database", synced = sync, items });
+    var queryParams = new Dictionary<string, string> { ["lr"] = "en-US" };
+    return await SyncAndListEndpointArticles(repository, rapidNews, "/business", queryParams);
 });
 
 app.MapGet("/api/world-headlines", async (NewsRepository repository, RapidNewsService rapidNews) =>
@@ -103,11 +100,7 @@ app.MapGet("/api/world-headlines", async (NewsRepository repository, RapidNewsSe
     }
 
     var queryParams = new Dictionary<string, string> { ["topic"] = "WORLD", ["limit"] = "500", ["country"] = "US", ["lang"] = "en" };
-    var payload = await rapidNews.GetCachedOrFreshPayloadAsync("/topic-headlines", queryParams);
-    var articles = NormalizeRapidNewsArticles(payload);
-    var sync = await repository.SaveArticlesAsync(articles, "/topic-headlines", queryParams);
-    var items = await repository.ListRandomArticlesByEndpointAsync("/topic-headlines", 9);
-    return Results.Json(new { enabled = true, source = "database", synced = sync with { status = "complete" }, items });
+    return await SyncAndListEndpointArticles(repository, rapidNews, "/topic-headlines", queryParams);
 });
 
 app.MapGet("/api/news-coverage", async (NewsRepository repository, RapidNewsService rapidNews) =>
@@ -124,12 +117,36 @@ app.MapGet("/api/news-coverage", async (NewsRepository repository, RapidNewsServ
         ["country"] = "US",
         ["lang"] = "en",
     };
-    var payload = await rapidNews.GetCachedOrFreshPayloadAsync("/full-story-coverage", queryParams);
-    var articles = NormalizeRapidNewsArticles(payload);
-    var sync = await repository.SaveArticlesAsync(articles, "/full-story-coverage", queryParams);
-    var items = await repository.ListRandomArticlesByEndpointAsync("/full-story-coverage", 9);
-    return Results.Json(new { enabled = true, source = "database", synced = sync with { status = "complete" }, items });
+    return await SyncAndListEndpointArticles(repository, rapidNews, "/full-story-coverage", queryParams);
 });
+
+async Task<IResult> SyncAndListEndpointArticles(
+    NewsRepository repository,
+    RapidNewsService rapidNews,
+    string endpointPath,
+    Dictionary<string, string> queryParams)
+{
+    try
+    {
+        var payload = await rapidNews.GetCachedOrFreshPayloadAsync(endpointPath, queryParams);
+        var articles = NormalizeRapidNewsArticles(payload);
+        var sync = await repository.SaveArticlesAsync(articles, endpointPath, queryParams);
+        var items = await repository.ListRandomArticlesByEndpointAsync(endpointPath, 9);
+        return Results.Json(new { enabled = true, source = "database", synced = sync, items });
+    }
+    catch (Exception exception)
+    {
+        var items = await repository.ListRandomArticlesByEndpointAsync(endpointPath, 9);
+        return Results.Json(new
+        {
+            enabled = true,
+            source = "database-fallback",
+            synced = new SyncStatus(0, 0, 0, "failed"),
+            items,
+            warning = exception.Message,
+        });
+    }
+}
 
 app.MapGet("/api/mysql/articles/collected-today", async (NewsRepository repository) =>
 {
@@ -1104,12 +1121,16 @@ public sealed class NewsRepository(NewsApiConfig config)
 
     private static ArticleRecord ReadArticle(MySqlDataReader reader)
     {
+        var rawArticle = JsonNode.Parse(reader["raw_article_json"] as string ?? "{}") as JsonObject;
+
         return new ArticleRecord(
             reader.GetString("article_hash"),
             reader["article_id"] as string,
             reader["title"] as string,
             reader["link"] as string,
             reader["snippet"] as string,
+            rawArticle?["photo_url"]?.GetValue<string>(),
+            rawArticle?["thumbnail_url"]?.GetValue<string>(),
             reader["source_name"] as string,
             reader["published_datetime_utc"] is DBNull ? null : reader["published_datetime_utc"],
             JsonSerializer.Deserialize<string[]>(reader["authors_json"] as string ?? "[]") ?? [],
@@ -1184,7 +1205,9 @@ public sealed class NewsRepository(NewsApiConfig config)
     private static DateTime? ParseArticlePublishedDate(object? value)
     {
         var normalized = NormalizeNullableString(value);
-        return DateTime.TryParse(normalized, out var parsed) ? parsed.ToUniversalTime() : null;
+        return DateTime.TryParse(normalized, out var parsed)
+            ? DateTime.SpecifyKind(parsed.ToUniversalTime(), DateTimeKind.Unspecified)
+            : null;
     }
 
     private static string? ToDataUrl(string? mimeType, byte[]? blob) =>
@@ -1381,6 +1404,8 @@ public sealed record ArticleRecord(
     string? title,
     string? link,
     string? snippet,
+    string? photo_url,
+    string? thumbnail_url,
     string? source_name,
     object? published_datetime_utc,
     string[] authors,

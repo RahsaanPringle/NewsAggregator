@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import ArticleCommentsPanel from './ArticleCommentsPanel'
 import { buildArticlePath } from '../utils/articleLinks'
+import { buildNewsApiUrl } from '../utils/newsApi'
 import { openNewsPopup } from '../utils/openNewsPopup'
 import './SingleArticleView.css'
 
@@ -102,7 +103,7 @@ function SingleArticleView({ articleHash }) {
       setRelatedArticles([])
 
       try {
-        const response = await fetch(`/api/articles/${encodeURIComponent(articleHash)}?relatedLimit=5`, {
+        const response = await fetch(buildNewsApiUrl(`/api/articles/${encodeURIComponent(articleHash)}?relatedLimit=5`), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

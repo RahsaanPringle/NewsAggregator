@@ -2,9 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import ArticleCommentsPanel from './ArticleCommentsPanel'
 import { buildArticlePath } from '../utils/articleLinks'
 import { openNewsPopup } from '../utils/openNewsPopup'
+import { buildNewsApiUrl } from '../utils/newsApi'
 
 const DEFAULT_COLUMNS = ['Headline', 'Source', 'Published', 'Authors']
-const MYSQL_API_BASE_URL = String(import.meta.env.VITE_NEWS_API_BASE_URL || '').trim().replace(/\/+$/, '')
 
 function formatPublishedDate(value) {
   if (!value) {
@@ -39,11 +39,7 @@ function buildLocalApiUrl(endpointPath, queryParams = {}) {
     }
   })
 
-  return `/api/news?${searchParams.toString()}`
-}
-
-function buildMysqlApiUrl(routePath) {
-  return MYSQL_API_BASE_URL ? `${MYSQL_API_BASE_URL}${routePath}` : routePath
+  return buildNewsApiUrl(`/api/news?${searchParams.toString()}`)
 }
 
 function getActionTarget(eventTarget) {
@@ -141,7 +137,7 @@ function NewsDataTable({
       setStatusLoading(true)
 
       try {
-        const response = await fetch(buildMysqlApiUrl('/api/mysql/articles/status'), {
+        const response = await fetch(buildNewsApiUrl('/api/mysql/articles/status'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -200,7 +196,7 @@ function NewsDataTable({
       try {
         const summaryEntries = await Promise.all(
           savedHashes.map(async (articleHash) => {
-            const response = await fetch(buildMysqlApiUrl(`/api/articles/${articleHash}/comments`), {
+            const response = await fetch(buildNewsApiUrl(`/api/articles/${articleHash}/comments`), {
               method: 'GET',
               headers: {
                 'Content-Type': 'application/json',
@@ -270,7 +266,7 @@ function NewsDataTable({
     setSavingArticleHashes((previousState) => new Set(previousState).add(articleHash))
 
     try {
-      const response = await fetch(buildMysqlApiUrl('/api/mysql/articles'), {
+      const response = await fetch(buildNewsApiUrl('/api/mysql/articles'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

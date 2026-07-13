@@ -5,7 +5,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>News_Net_API</RootNamespace>
+    <DefaultItemExcludes>$(DefaultItemExcludes);publish\**;artifacts\**</DefaultItemExcludes>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Update="appsettings.Development.json" CopyToPublishDirectory="Never" />
+    <Content Update="appsettings.Production.example.json" CopyToPublishDirectory="Never" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MySqlConnector" Version="2.4.0" />

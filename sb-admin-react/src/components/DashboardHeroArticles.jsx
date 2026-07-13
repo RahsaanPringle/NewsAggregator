@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { buildArticlePath } from '../utils/articleLinks'
+import { buildNewsApiUrl } from '../utils/newsApi'
 import './DashboardHeroArticles.css'
 
 function getArticleImageUrl(article) {
@@ -91,7 +92,7 @@ function DashboardHeroArticles() {
       setError('')
 
       try {
-        const response = await fetch('/api/hero-articles?limit=5&poolLimit=80', {
+        const response = await fetch(buildNewsApiUrl('/api/hero-articles?limit=5&poolLimit=80'), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

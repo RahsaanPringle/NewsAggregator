@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { buildNewsApiUrl } from '../utils/newsApi'
 import DashboardStatCard from './DashboardStatCard'
 
 function formatCount(value) {
@@ -18,7 +19,7 @@ function DashboardCommentsWithResponsesCard() {
       setError('')
 
       try {
-        const response = await fetch('/api/mysql/comments/with-responses', {
+        const response = await fetch(buildNewsApiUrl('/api/mysql/comments/with-responses'), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { buildNewsApiUrl } from '../utils/newsApi'
 import DashboardCardMenu from './DashboardCardMenu'
 
 const NEWS_CHART_DAYS = 7
 
 function buildSavedByDayUrl() {
   const searchParams = new URLSearchParams({ days: String(NEWS_CHART_DAYS) })
-  return `/api/mysql/articles/saved-by-day?${searchParams.toString()}`
+  return buildNewsApiUrl(`/api/mysql/articles/saved-by-day?${searchParams.toString()}`)
 }
 
 function normalizeSavedByDayPayload(payload) {

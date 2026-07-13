@@ -1,12 +1,7 @@
 import { useEffect, useState } from 'react'
 import CommentComposerForm from './CommentComposerForm'
 import { getCurrentCommentUserId, setCurrentCommentUser } from '../utils/commentUserSession'
-
-const MYSQL_API_BASE_URL = String(import.meta.env.VITE_NEWS_API_BASE_URL || '').trim().replace(/\/+$/, '')
-
-function buildMysqlApiUrl(routePath) {
-  return MYSQL_API_BASE_URL ? `${MYSQL_API_BASE_URL}${routePath}` : routePath
-}
+import { buildNewsApiUrl } from '../utils/newsApi'
 
 function formatTimestamp(value) {
   if (!value) {
@@ -107,7 +102,7 @@ function ArticleCommentsPanel({
       return existingCommentUserId
     }
 
-    const response = await fetch(buildMysqlApiUrl('/api/comment-users/random'), {
+    const response = await fetch(buildNewsApiUrl('/api/comment-users/random'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -137,7 +132,7 @@ function ArticleCommentsPanel({
       setError('')
 
       try {
-        const response = await fetch(buildMysqlApiUrl(`/api/articles/${articleHash}/comments`), {
+        const response = await fetch(buildNewsApiUrl(`/api/articles/${articleHash}/comments`), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -218,7 +213,7 @@ function ArticleCommentsPanel({
         }
       }
 
-      const response = await fetch(buildMysqlApiUrl(`/api/articles/${articleHash}/comments`), {
+      const response = await fetch(buildNewsApiUrl(`/api/articles/${articleHash}/comments`), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

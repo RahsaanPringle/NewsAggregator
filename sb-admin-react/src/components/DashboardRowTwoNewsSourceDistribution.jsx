@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { buildNewsApiUrl } from '../utils/newsApi'
 import DashboardCardMenu from './DashboardCardMenu'
 
 const SOURCE_COLORS = ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b']
@@ -7,7 +8,7 @@ const NEWS_SOURCE_LIMIT = 4
 
 function buildSourceDistributionUrl() {
   const searchParams = new URLSearchParams({ limit: String(NEWS_SOURCE_LIMIT) })
-  return `/api/mysql/articles/source-distribution?${searchParams.toString()}`
+  return buildNewsApiUrl(`/api/mysql/articles/source-distribution?${searchParams.toString()}`)
 }
 
 function normalizeSourceDistributionPayload(payload) {

@@ -8,13 +8,8 @@ import {
   getCurrentCommentUserSnapshot,
   setCurrentCommentUser,
 } from '../utils/commentUserSession'
-
-const MYSQL_API_BASE_URL = String(import.meta.env.VITE_NEWS_API_BASE_URL || '').trim().replace(/\/+$/, '')
+import { buildNewsApiUrl, NEWS_API_BASE_URL } from '../utils/newsApi'
 const NEWS_API_BASE_URL_STORAGE_KEY = 'news-api-base-url'
-
-function buildMysqlApiUrl(routePath) {
-  return MYSQL_API_BASE_URL ? `${MYSQL_API_BASE_URL}${routePath}` : routePath
-}
 
 function formatRelativeTimestamp(value) {
   if (!value) {
@@ -98,8 +93,8 @@ function Topbar() {
   const [inboxRefreshNonce, setInboxRefreshNonce] = useState(0)
 
   useEffect(() => {
-    if (MYSQL_API_BASE_URL && typeof window !== 'undefined' && window.localStorage) {
-      window.localStorage.setItem(NEWS_API_BASE_URL_STORAGE_KEY, MYSQL_API_BASE_URL)
+    if (NEWS_API_BASE_URL && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(NEWS_API_BASE_URL_STORAGE_KEY, NEWS_API_BASE_URL)
     }
   }, [])
 
@@ -133,7 +128,7 @@ function Topbar() {
 
     async function createRandomCommentUser() {
       try {
-        const response = await fetch(buildMysqlApiUrl('/api/comment-users/random'), {
+        const response = await fetch(buildNewsApiUrl('/api/comment-users/random'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -171,7 +166,7 @@ function Topbar() {
 
     async function loadCurrentUser() {
       try {
-        const response = await fetch(buildMysqlApiUrl(`/api/comment-users/${currentCommentUserId}`), {
+        const response = await fetch(buildNewsApiUrl(`/api/comment-users/${currentCommentUserId}`), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -247,7 +242,7 @@ function Topbar() {
 
       try {
         const response = await fetch(
-          buildMysqlApiUrl(`/api/comment-messages/inbox?commentUserId=${currentCommentUserId}&limit=4`),
+          buildNewsApiUrl(`/api/comment-messages/inbox?commentUserId=${currentCommentUserId}&limit=4`),
           {
             method: 'GET',
             headers: {

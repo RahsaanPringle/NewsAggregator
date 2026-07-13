@@ -2,12 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import SavedArticleCommentSection from './SavedArticleCommentSection'
 import { buildArticlePath } from '../utils/articleLinks'
 import { openNewsPopup } from '../utils/openNewsPopup'
-
-const MYSQL_API_BASE_URL = String(import.meta.env.VITE_NEWS_API_BASE_URL || '').trim().replace(/\/+$/, '')
-
-function buildMysqlApiUrl(routePath) {
-  return MYSQL_API_BASE_URL ? `${MYSQL_API_BASE_URL}${routePath}` : routePath
-}
+import { buildNewsApiUrl } from '../utils/newsApi'
 
 function formatPublishedDate(value) {
   if (!value) {
@@ -67,7 +62,7 @@ function DashboardRowThreeWorldHeadlinesCards() {
       setCommentsByArticleHash({})
 
       try {
-        const response = await fetch('/api/world-headlines', {
+        const response = await fetch(buildNewsApiUrl('/api/world-headlines'), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -115,7 +110,7 @@ function DashboardRowThreeWorldHeadlinesCards() {
       try {
         const summaryEntries = await Promise.all(
           articleHashes.map(async (articleHash) => {
-            const response = await fetch(buildMysqlApiUrl(`/api/articles/${articleHash}/comments`), {
+            const response = await fetch(buildNewsApiUrl(`/api/articles/${articleHash}/comments`), {
               method: 'GET',
               headers: {
                 'Content-Type': 'application/json',
