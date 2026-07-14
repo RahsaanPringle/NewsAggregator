@@ -429,6 +429,11 @@ public static class ApiHelpers
 
     public static List<JsonObject> NormalizeRapidNewsArticles(JsonNode? payload)
     {
+        if (payload?["items"] is JsonArray businessItems)
+        {
+            return NormalizeGoogleBusinessArticles(businessItems);
+        }
+
         var candidates = new[]
         {
             payload?["data"] as JsonArray,
@@ -440,6 +445,71 @@ public static class ApiHelpers
             .OfType<JsonObject>()
             .Select(article => article.DeepClone().AsObject())
             .ToList() ?? [];
+    }
+
+    private static List<JsonObject> NormalizeGoogleBusinessArticles(JsonArray items)
+    {
+        var flattenedItems = new List<JsonObject>();
+        foreach (var item in items.OfType<JsonObject>())
+        {
+            flattenedItems.Add(item);
+            if (item["subnews"] is JsonArray subnews)
+            {
+                flattenedItems.AddRange(subnews.OfType<JsonObject>());
+            }
+        }
+
+        return flattenedItems
+            .Select(item =>
+            {
+                var normalized = item.DeepClone().AsObject();
+                var imageUrl = FirstString(
+                    item["images"]?["thumbnailProxied"],
+                    item["images"]?["thumbnail"],
+                    item["photo_url"],
+                    item["thumbnail_url"],
+                    item["image_url"],
+                    item["image"]);
+
+                normalized["article_id"] = FirstString(item["newsUrl"], item["article_id"], item["title"]);
+                normalized["title"] = FirstString(item["title"]);
+                normalized["link"] = FirstString(item["newsUrl"], item["link"]);
+                normalized["snippet"] = FirstString(item["snippet"], item["description"], item["summary"]);
+                normalized["source_name"] = FirstString(item["publisher"], item["source_name"]);
+                normalized["published_datetime_utc"] = ParseBusinessTimestamp(FirstString(item["timestamp"]));
+                normalized["authors"] = new JsonArray();
+                normalized["photo_url"] = imageUrl;
+                normalized["thumbnail_url"] = imageUrl;
+
+                return normalized;
+            })
+            .Where(article => !string.IsNullOrWhiteSpace(FirstString(article["title"])) &&
+                              !string.IsNullOrWhiteSpace(FirstString(article["link"])))
+            .ToList();
+    }
+
+    private static string? FirstString(params JsonNode?[] candidates) =>
+        candidates
+            .Select(candidate => candidate is JsonValue value && value.TryGetValue<string>(out var text)
+                ? NormalizeNullableString(text)
+                : null)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+
+    private static string? ParseBusinessTimestamp(string? value)
+    {
+        if (long.TryParse(value, out var milliseconds))
+        {
+            try
+            {
+                return DateTimeOffset.FromUnixTimeMilliseconds(milliseconds).UtcDateTime.ToString("O");
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return null;
+            }
+        }
+
+        return DateTimeOffset.TryParse(value, out var parsed) ? parsed.UtcDateTime.ToString("O") : null;
     }
 
     public static string ComputeArticleHash(JsonObject article)
@@ -514,7 +584,7 @@ public sealed class RapidNewsService(NewsApiConfig config, NewsRepository reposi
 
     public async Task<JsonNode?> GetCachedOrFreshPayloadAsync(string endpointPath, Dictionary<string, string> queryParams)
     {
-        var cached = await repository.FindFreshCacheEntryAsync("rapidApi", endpointPath, queryParams, config.CacheTtl);
+        var cached = await repository.FindCacheEntryAsync("rapidApi", endpointPath, queryParams, config.CacheTtl);
         if (cached is not null)
         {
             return cached;
@@ -525,9 +595,22 @@ public sealed class RapidNewsService(NewsApiConfig config, NewsRepository reposi
             throw new InvalidOperationException("Missing RapidAPI key. Set RapidApiKey, RAPIDAPI_KEY, or VITE_RAPIDAPI_KEY.");
         }
 
-        var payload = await FetchFromRapidApiAsync(endpointPath, queryParams);
-        await repository.SaveCacheEntryAsync("rapidApi", endpointPath, queryParams, payload);
-        return payload;
+        try
+        {
+            var payload = await FetchFromRapidApiAsync(endpointPath, queryParams);
+            await repository.SaveCacheEntryAsync("rapidApi", endpointPath, queryParams, payload);
+            return payload;
+        }
+        catch
+        {
+            var staleCache = await repository.FindCacheEntryAsync("rapidApi", endpointPath, queryParams, null);
+            if (staleCache is not null)
+            {
+                return staleCache;
+            }
+
+            throw;
+        }
     }
 
     private async Task<JsonNode?> FetchFromRapidApiAsync(string endpointPath, Dictionary<string, string> queryParams)
@@ -554,6 +637,9 @@ public sealed class RapidNewsService(NewsApiConfig config, NewsRepository reposi
 
 public sealed class NewsRepository(NewsApiConfig config)
 {
+    private readonly SemaphoreSlim schemaLock = new(1, 1);
+    private bool schemaReady;
+
     public bool IsConfigured => !string.IsNullOrWhiteSpace(config.MySqlConnectionString);
 
     private async Task<MySqlConnection> OpenConnectionAsync()
@@ -570,14 +656,64 @@ public sealed class NewsRepository(NewsApiConfig config)
 
     private async Task EnsureSchemaAsync(MySqlConnection connection)
     {
-        foreach (var statement in SchemaStatements.All)
+        if (schemaReady)
         {
-            await using var command = new MySqlCommand(statement, connection);
-            await command.ExecuteNonQueryAsync();
+            return;
+        }
+
+        await schemaLock.WaitAsync();
+        try
+        {
+            if (schemaReady)
+            {
+                return;
+            }
+
+            var existingTables = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            await using (var command = new MySqlCommand(
+                @"SELECT TABLE_NAME
+                  FROM INFORMATION_SCHEMA.TABLES
+                  WHERE TABLE_SCHEMA = DATABASE()",
+                connection))
+            await using (var reader = await command.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    existingTables.Add(reader.GetString(0));
+                }
+            }
+
+            for (var index = 0; index < SchemaStatements.All.Length; index += 1)
+            {
+                var tableName = SchemaStatements.TableNames[index];
+                if (existingTables.Contains(tableName))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    await using var command = new MySqlCommand(SchemaStatements.All[index], connection);
+                    await command.ExecuteNonQueryAsync();
+                }
+                catch (MySqlException exception) when (exception.Number == 1142)
+                {
+                    throw new InvalidOperationException(
+                        $"The required MySQL table '{tableName}' is missing, and the configured database user cannot create it. " +
+                        "Provision the schema with an administrator account, then restart the API.",
+                        exception);
+                }
+            }
+
+            schemaReady = true;
+        }
+        finally
+        {
+            schemaLock.Release();
         }
     }
 
-    public async Task<JsonNode?> FindFreshCacheEntryAsync(string apiSource, string endpointPath, Dictionary<string, string> queryParams, TimeSpan ttl)
+    public async Task<JsonNode?> FindCacheEntryAsync(string apiSource, string endpointPath, Dictionary<string, string> queryParams, TimeSpan? ttl)
     {
         if (!IsConfigured)
         {
@@ -608,7 +744,7 @@ public sealed class NewsRepository(NewsApiConfig config)
         }
 
         var fetchedAt = reader.GetDateTime("fetched_at");
-        if (DateTime.UtcNow - fetchedAt.ToUniversalTime() >= ttl)
+        if (ttl is not null && DateTime.UtcNow - fetchedAt.ToUniversalTime() >= ttl.Value)
         {
             return null;
         }
@@ -671,7 +807,17 @@ public sealed class NewsRepository(NewsApiConfig config)
                 @article_hash, @article_id, @title, @link, @snippet, @source_name, @published_datetime_utc,
                 @authors_json, @endpoint_path, @query_params_json, @raw_article_json
               )
-              ON DUPLICATE KEY UPDATE updated_at = updated_at",
+              ON DUPLICATE KEY UPDATE
+                article_id = VALUES(article_id),
+                title = VALUES(title),
+                link = VALUES(link),
+                snippet = VALUES(snippet),
+                source_name = VALUES(source_name),
+                published_datetime_utc = VALUES(published_datetime_utc),
+                authors_json = VALUES(authors_json),
+                endpoint_path = VALUES(endpoint_path),
+                query_params_json = VALUES(query_params_json),
+                raw_article_json = VALUES(raw_article_json)",
             connection);
 
         command.Parameters.AddWithValue("@article_hash", articleHash);
@@ -1122,6 +1268,7 @@ public sealed class NewsRepository(NewsApiConfig config)
     private static ArticleRecord ReadArticle(MySqlDataReader reader)
     {
         var rawArticle = JsonNode.Parse(reader["raw_article_json"] as string ?? "{}") as JsonObject;
+        var photoUrl = FirstArticleImageUrl(rawArticle);
 
         return new ArticleRecord(
             reader.GetString("article_hash"),
@@ -1129,8 +1276,8 @@ public sealed class NewsRepository(NewsApiConfig config)
             reader["title"] as string,
             reader["link"] as string,
             reader["snippet"] as string,
-            rawArticle?["photo_url"]?.GetValue<string>(),
-            rawArticle?["thumbnail_url"]?.GetValue<string>(),
+            photoUrl,
+            FirstArticleString(rawArticle?["thumbnail_url"]) ?? photoUrl,
             reader["source_name"] as string,
             reader["published_datetime_utc"] is DBNull ? null : reader["published_datetime_utc"],
             JsonSerializer.Deserialize<string[]>(reader["authors_json"] as string ?? "[]") ?? [],
@@ -1139,6 +1286,21 @@ public sealed class NewsRepository(NewsApiConfig config)
             reader["created_at"],
             reader["updated_at"]);
     }
+
+    private static string? FirstArticleImageUrl(JsonObject? article) => FirstArticleString(
+        article?["photo_url"],
+        article?["thumbnail_url"],
+        article?["images"]?["thumbnailProxied"],
+        article?["images"]?["thumbnail"],
+        article?["image_url"],
+        article?["image"]);
+
+    private static string? FirstArticleString(params JsonNode?[] candidates) =>
+        candidates
+            .Select(candidate => candidate is JsonValue value && value.TryGetValue<string>(out var text)
+                ? NormalizeNullableString(text)
+                : null)
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
 
     private static Dictionary<string, string> ParseStringDictionary(string? json)
     {
@@ -1228,6 +1390,15 @@ public sealed class NewsRepository(NewsApiConfig config)
 
 public static class SchemaStatements
 {
+    public static readonly string[] TableNames =
+    [
+        "news_articles",
+        "api_cache_entries",
+        "comment_users",
+        "article_comments",
+        "comment_messages",
+    ];
+
     public static readonly string[] All =
     [
         @"CREATE TABLE IF NOT EXISTS news_articles (

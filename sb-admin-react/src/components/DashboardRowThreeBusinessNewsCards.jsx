@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import SavedArticleCommentSection from './SavedArticleCommentSection'
-import { buildArticlePath } from '../utils/articleLinks'
 import { openNewsPopup } from '../utils/openNewsPopup'
 import { buildNewsApiUrl } from '../utils/newsApi'
 
@@ -42,6 +41,38 @@ function getArticlePreviewText(article) {
   const resolved = candidates.find((value) => typeof value === 'string' && value.trim())
 
   return resolved ? resolved.trim() : 'No preview available.'
+}
+
+function BusinessArticleImage({ article, imageUrl }) {
+  const [imageFailed, setImageFailed] = useState(false)
+
+  if (imageUrl && !imageFailed) {
+    return (
+      <img
+        src={imageUrl}
+        className="card-img-top"
+        alt={article.title || 'Article image'}
+        loading="lazy"
+        onError={() => setImageFailed(true)}
+        style={{ height: '200px', objectFit: 'cover' }}
+      />
+    )
+  }
+
+  return (
+    <div
+      className="card-img-top d-flex flex-column align-items-center justify-content-center text-white text-center px-3"
+      role="img"
+      aria-label={`${article.source_name || 'Business News'} article image unavailable`}
+      style={{
+        height: '200px',
+        background: 'linear-gradient(135deg, #1cc88a 0%, #0f6848 100%)',
+      }}
+    >
+      <i className="fas fa-chart-line fa-3x mb-3" aria-hidden="true" />
+      <span className="font-weight-bold">{article.source_name || 'Business News'}</span>
+    </div>
+  )
 }
 
 function DashboardRowThreeBusinessNewsCards() {
@@ -100,7 +131,6 @@ function DashboardRowThreeBusinessNewsCards() {
     const articleHashes = articles.map((article) => article.article_hash).filter(Boolean)
 
     if (!articleHashes.length) {
-      setCommentsByArticleHash({})
       return () => {
         abortController.abort()
       }
@@ -168,24 +198,16 @@ function DashboardRowThreeBusinessNewsCards() {
         return (
           <div className={columnClassName} key={articleHash || article.article_id || `${article.title}-${index}`}>
             <div className="card shadow h-100 border-left-success">
-              {imageUrl ? (
-                <a
-                  href={article.link}
-                  onClick={(event) => {
-                    event.preventDefault()
-                    event.stopPropagation()
-                    openNewsPopup(article.link)
-                  }}
-                >
-                  <img
-                    src={imageUrl}
-                    className="card-img-top"
-                    alt={article.title || 'Article image'}
-                    loading="lazy"
-                    style={{ maxHeight: '240px', objectFit: 'cover' }}
-                  />
-                </a>
-              ) : null}
+              <a
+                href={article.link}
+                onClick={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  openNewsPopup(article.link)
+                }}
+              >
+                <BusinessArticleImage key={imageUrl || 'fallback'} article={article} imageUrl={imageUrl} />
+              </a>
               <div className="card-body d-flex flex-column">
                 <div className="small text-gray-500 mb-2">{article.source_name || 'Unknown source'}</div>
                 <h6 className="font-weight-bold mb-2">
