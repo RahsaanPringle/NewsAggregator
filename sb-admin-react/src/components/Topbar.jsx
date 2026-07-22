@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
 import HtmlSection from './HtmlSection'
-import UserDropdown from './UserDropdown'
 import topbarHtml from '../markup/topbar.html?raw'
 import {
   getCurrentCommentUserId,
@@ -47,6 +45,25 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
+}
+
+function buildUserDropdownHtml(user) {
+  const displayName = escapeHtml(user?.display_name || 'Guest User')
+  const avatarUrl = escapeHtml(user?.profile_thumbnail_data_url || '/img/undraw_profile.svg')
+
+  return `<li class="nav-item dropdown no-arrow">
+    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+      <span class="mr-2 d-none d-lg-inline text-gray-600 small">${displayName}</span>
+      <img class="img-profile rounded-circle" src="${avatarUrl}" alt="${displayName}">
+    </a>
+    <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+      <a class="dropdown-item" href="/profile.html"><i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>Profile</a>
+      <a class="dropdown-item" href="#"><i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>Settings</a>
+      <a class="dropdown-item" href="#"><i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>Activity Log</a>
+      <div class="dropdown-divider"></div>
+      <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal"><i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>Logout</a>
+    </div>
+  </li>`
 }
 
 function buildMessageItemsHtml({ loading, error, messages }) {
@@ -168,9 +185,6 @@ function Topbar() {
       try {
         const response = await fetch(buildNewsApiUrl(`/api/comment-users/${currentCommentUserId}`), {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           signal: abortController.signal,
         })
 
@@ -245,9 +259,6 @@ function Topbar() {
           buildNewsApiUrl(`/api/comment-messages/inbox?commentUserId=${currentCommentUserId}&limit=4`),
           {
             method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
             signal: abortController.signal,
           },
         )
@@ -280,7 +291,7 @@ function Topbar() {
   const hasMessages = messages.length > 0
   const badgeLabel = messages.length > 99 ? '99+' : String(messages.length)
   const messageItemsHtml = buildMessageItemsHtml({ loading, error, messages })
-  const userDropdownHtml = renderToStaticMarkup(<UserDropdown user={currentUser} />)
+  const userDropdownHtml = buildUserDropdownHtml(currentUser)
 
   const renderedTopbarHtml = useMemo(
     () =>

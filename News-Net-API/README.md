@@ -37,6 +37,7 @@ Copy `appsettings.Production.example.json` to `appsettings.Production.json` on t
 - `MySql:Database`
 - `MySql:User`
 - `MySql:Password`
+- `MySql:MaximumPoolSize` (optional; defaults to `10`)
 - `CorsOrigins`
 
 The API can also read equivalent environment variables:
@@ -47,6 +48,7 @@ The API can also read equivalent environment variables:
 - `MYSQL_DATABASE`
 - `MYSQL_USER`
 - `MYSQL_PASSWORD`
+- `MYSQL_MAXIMUM_POOL_SIZE`
 
 ## Local Build
 

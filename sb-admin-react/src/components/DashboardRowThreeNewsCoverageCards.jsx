@@ -64,9 +64,6 @@ function DashboardRowThreeNewsCoverageCards() {
       try {
         const response = await fetch(buildNewsApiUrl('/api/news-coverage'), {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           signal: abortController.signal,
         })
 
@@ -112,9 +109,6 @@ function DashboardRowThreeNewsCoverageCards() {
           articleHashes.map(async (articleHash) => {
             const response = await fetch(buildNewsApiUrl(`/api/articles/${articleHash}/comments`), {
               method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-              },
               signal: abortController.signal,
             })
 

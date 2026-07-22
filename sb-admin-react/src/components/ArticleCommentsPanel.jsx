@@ -134,9 +134,6 @@ function ArticleCommentsPanel({
       try {
         const response = await fetch(buildNewsApiUrl(`/api/articles/${articleHash}/comments`), {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           signal: abortController.signal,
         })
 

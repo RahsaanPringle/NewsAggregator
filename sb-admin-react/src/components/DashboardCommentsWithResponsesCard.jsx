@@ -21,9 +21,6 @@ function DashboardCommentsWithResponsesCard() {
       try {
         const response = await fetch(buildNewsApiUrl('/api/mysql/comments/with-responses'), {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           signal: abortController.signal,
         })
 

@@ -61,7 +61,13 @@ function DashboardHeroTile({ article, featured }) {
     <article className={featured ? 'news-hero-tile news-hero-tile-featured' : 'news-hero-tile'}>
       <a href={articlePath} className="news-hero-link">
         {imageUrl ? (
-          <img src={imageUrl} alt={title} className="news-hero-image" loading={featured ? 'eager' : 'lazy'} />
+          <img
+            src={imageUrl}
+            alt={title}
+            className="news-hero-image"
+            loading={featured ? 'eager' : 'lazy'}
+            fetchPriority={featured ? 'high' : 'auto'}
+          />
         ) : (
           <div className="news-hero-image news-hero-image-fallback" aria-hidden="true" />
         )}
@@ -94,9 +100,6 @@ function DashboardHeroArticles() {
       try {
         const response = await fetch(buildNewsApiUrl('/api/hero-articles?limit=5&poolLimit=80'), {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           signal: abortController.signal,
         })
 

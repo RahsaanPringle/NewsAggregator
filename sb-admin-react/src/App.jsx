@@ -13,8 +13,6 @@ const coreScripts = [
   '/vendor/jquery-easing/jquery.easing.min.js',
   '/js/sb-admin-2.min.js',
   '/vendor/chart.js/Chart.min.js',
-  '/vendor/datatables/jquery.dataTables.min.js',
-  '/vendor/datatables/dataTables.bootstrap4.min.js',
 ]
 
 const pageScripts = []
@@ -152,13 +150,13 @@ function App() {
         <div id="content-wrapper" className="d-flex flex-column">
           <div id="content">
             <Topbar />
-            <div className="container-fluid">
+            <main className="container-fluid">
               {articleHash ? (
                 <SingleArticleView articleHash={articleHash} />
               ) : (
                 <DashboardContent scriptsReady={scriptsReady} />
               )}
-            </div>
+            </main>
           </div>
 
           <Footer />

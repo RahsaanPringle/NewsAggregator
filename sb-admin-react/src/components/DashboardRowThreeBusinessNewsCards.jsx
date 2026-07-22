@@ -95,9 +95,6 @@ function DashboardRowThreeBusinessNewsCards() {
       try {
         const response = await fetch(buildNewsApiUrl('/api/business-news'), {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           signal: abortController.signal,
         })
 
@@ -142,9 +139,6 @@ function DashboardRowThreeBusinessNewsCards() {
           articleHashes.map(async (articleHash) => {
             const response = await fetch(buildNewsApiUrl(`/api/articles/${articleHash}/comments`), {
               method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-              },
               signal: abortController.signal,
             })
 
@@ -193,7 +187,7 @@ function DashboardRowThreeBusinessNewsCards() {
         const articleComments = articleHash ? commentsByArticleHash[articleHash] || [] : []
         const imageUrl = getArticleImageUrl(article)
         const hasComments = articleComments.length > 0
-        const columnClassName = hasComments ? 'col-12 mb-4' : 'col-xl-4 col-lg-4 col-md-6 mb-4'
+        const columnClassName = hasComments ? 'col-3 mb-4' : 'col-xl-4 col-lg-4 col-md-6 mb-4'
 
         return (
           <div className={columnClassName} key={articleHash || article.article_id || `${article.title}-${index}`}>

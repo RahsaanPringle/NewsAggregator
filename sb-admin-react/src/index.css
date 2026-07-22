@@ -1,3 +1,9 @@
 body {
   margin: 0;
 }
+
+@media (min-width: 768px) {
+  .dashboard-chart-card {
+    min-height: 30.5rem;
+  }
+}

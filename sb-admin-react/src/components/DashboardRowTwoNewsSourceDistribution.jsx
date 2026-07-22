@@ -50,9 +50,6 @@ function DashboardRowTwoNewsSourceDistribution({ scriptsReady }) {
       try {
         const response = await fetch(buildSourceDistributionUrl(), {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           signal: abortController.signal,
         })
 
@@ -164,7 +161,7 @@ function DashboardRowTwoNewsSourceDistribution({ scriptsReady }) {
 
   return (
     <div className="col-xl-4 col-lg-5">
-      <div className="card shadow mb-4">
+      <div className="card shadow mb-4 dashboard-chart-card">
         <div className="card-header py-3 d-flex flex-row align-items-center justify-content-between">
           <h6 className="m-0 font-weight-bold text-primary">News Source Distribution</h6>
           <DashboardCardMenu menuId="newsSourceDistributionMenu" />

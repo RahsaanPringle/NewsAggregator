@@ -21,9 +21,6 @@ function DashboardArticlesCollectedTodayCard() {
       try {
         const response = await fetch(buildNewsApiUrl('/api/mysql/articles/collected-today'), {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           signal: abortController.signal,
         })
 

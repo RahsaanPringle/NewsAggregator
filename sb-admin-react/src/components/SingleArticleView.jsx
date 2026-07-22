@@ -105,9 +105,6 @@ function SingleArticleView({ articleHash }) {
       try {
         const response = await fetch(buildNewsApiUrl(`/api/articles/${encodeURIComponent(articleHash)}?relatedLimit=5`), {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           signal: abortController.signal,
         })
 

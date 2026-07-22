@@ -541,6 +541,8 @@ public static class ApiHelpers
 
 public sealed class NewsApiConfig(IConfiguration configuration)
 {
+    private const uint DefaultMySqlMaximumPoolSize = 10;
+
     public string DeploymentBasePath { get; } = NormalizeBasePath(configuration["DeploymentBasePath"] ?? "/NewsAPI");
     public string RapidApiKey { get; } = configuration["RapidApiKey"] ?? configuration["RAPIDAPI_KEY"] ?? configuration["VITE_RAPIDAPI_KEY"] ?? "";
     public string MySqlConnectionString { get; } = BuildConnectionString(configuration);
@@ -559,10 +561,19 @@ public sealed class NewsApiConfig(IConfiguration configuration)
 
     private static string BuildConnectionString(IConfiguration configuration)
     {
+        var maximumPoolSize = uint.TryParse(
+            configuration["MYSQL_MAXIMUM_POOL_SIZE"] ?? configuration["MySql:MaximumPoolSize"],
+            out var configuredMaximumPoolSize) && configuredMaximumPoolSize > 0
+                ? configuredMaximumPoolSize
+                : DefaultMySqlMaximumPoolSize;
         var direct = configuration.GetConnectionString("NewsDatabase");
         if (!string.IsNullOrWhiteSpace(direct))
         {
-            return direct;
+            var connectionString = new MySqlConnectionStringBuilder(direct)
+            {
+                MaximumPoolSize = maximumPoolSize,
+            };
+            return connectionString.ConnectionString;
         }
 
         var host = configuration["MYSQL_HOST"] ?? configuration["MySql:Host"] ?? "my04.winhost.com";
@@ -573,7 +584,7 @@ public sealed class NewsApiConfig(IConfiguration configuration)
 
         return string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(database) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password)
             ? ""
-            : $"Server={host};Port={port};Database={database};User ID={user};Password={password};Charset=utf8mb4;Allow User Variables=true;";
+            : $"Server={host};Port={port};Database={database};User ID={user};Password={password};Charset=utf8mb4;Allow User Variables=true;Maximum Pool Size={maximumPoolSize};";
     }
 }
 
@@ -868,12 +879,18 @@ public sealed class NewsRepository(NewsApiConfig config)
         await using var connection = await OpenConnectionAsync();
         await EnsureSchemaAsync(connection);
         await using var command = new MySqlCommand(
-            @"SELECT * FROM news_articles
-              ORDER BY COALESCE(published_datetime_utc, created_at) DESC
-              LIMIT @poolLimit",
+            @"SELECT recent.*
+              FROM (
+                SELECT * FROM news_articles
+                ORDER BY COALESCE(published_datetime_utc, created_at) DESC
+                LIMIT @poolLimit
+              ) AS recent
+              ORDER BY RAND()
+              LIMIT @limit",
             connection);
         command.Parameters.AddWithValue("@poolLimit", poolLimit);
-        return (await ReadArticlesAsync(command)).OrderBy(_ => Guid.NewGuid()).Take(limit).ToList();
+        command.Parameters.AddWithValue("@limit", limit);
+        return await ReadArticlesAsync(command);
     }
 
     public async Task<List<ArticleRecord>> ListRandomArticlesByEndpointAsync(string endpointPath, int limit)

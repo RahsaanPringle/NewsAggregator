@@ -95,9 +95,6 @@ function NewsDataTable({
       try {
         const response = await fetch(requestUrl, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           signal: abortController.signal,
         })
 
@@ -198,9 +195,6 @@ function NewsDataTable({
           savedHashes.map(async (articleHash) => {
             const response = await fetch(buildNewsApiUrl(`/api/articles/${articleHash}/comments`), {
               method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-              },
               signal: abortController.signal,
             })
 

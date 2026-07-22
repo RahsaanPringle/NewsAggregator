@@ -67,9 +67,6 @@ function useNewsCardGridData({ endpointPath, queryParams, loadErrorLabel }) {
       try {
         const response = await fetch(requestUrl, {
           method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
           signal: abortController.signal,
         })
 
@@ -160,9 +157,6 @@ function useNewsCardGridData({ endpointPath, queryParams, loadErrorLabel }) {
           savedHashes.map(async (articleHash) => {
             const response = await fetch(buildNewsApiUrl(`/api/articles/${articleHash}/comments`), {
               method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-              },
               signal: abortController.signal,
             })
 
