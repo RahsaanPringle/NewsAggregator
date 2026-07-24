@@ -156,11 +156,9 @@ function DashboardRowThreeNewsCoverageCards() {
         const articleHash = article.article_hash
         const articleComments = articleHash ? commentsByArticleHash[articleHash] || [] : []
         const imageUrl = getArticleImageUrl(article)
-        const hasComments = articleComments.length > 0
-        const columnClassName = hasComments ? 'col-12 mb-4' : 'col-xl-4 col-lg-4 col-md-6 mb-4'
 
         return (
-          <div className={columnClassName} key={articleHash || article.article_id || `${article.title}-${index}`}>
+          <div className="col-4 mb-4" key={articleHash || article.article_id || `${article.title}-${index}`}>
             <div className="card shadow h-100 border-left-success">
               {imageUrl ? (
                 <a

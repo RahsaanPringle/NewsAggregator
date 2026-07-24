@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Voynich Messenger — Concept & Prototype</title>
+  <style>
+    :root{--ink:#29251f;--muted:#6c6458;--paper:#eee3c7;--paper2:#f8f1df;--green:#344f46;--gold:#a67c3b;--red:#8d3d35;--line:#cdbd99;--shadow:rgba(43,34,20,.16)}
+    *{box-sizing:border-box} html{scroll-behavior:smooth}
+    body{margin:0;color:var(--ink);font-family:Georgia,'Times New Roman',serif;background:#211f1b;background-image:radial-gradient(circle at 20% 10%,#3a352d 0,transparent 35%),radial-gradient(circle at 85% 80%,#141714 0,transparent 40%);min-height:100vh}
+    .page{width:min(1120px,calc(100% - 28px));margin:28px auto;background:linear-gradient(100deg,var(--paper),var(--paper2) 48%,#eadcbb);border:1px solid #b49d73;box-shadow:0 22px 70px #0009;position:relative;overflow:hidden}
+    .page:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.24;background-image:repeating-linear-gradient(2deg,transparent 0 7px,#7c68480b 8px 9px),radial-gradient(circle at 8% 20%,#7b573a22,transparent 16%),radial-gradient(circle at 90% 70%,#80613618,transparent 18%)}
+    header{position:relative;padding:64px 7% 44px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:1.5fr .7fr;gap:30px;align-items:center}
+    .eyebrow{font:700 .75rem system-ui,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--red)}
+    h1{font-size:clamp(3rem,8vw,6.7rem);line-height:.82;margin:14px 0 24px;font-weight:500;letter-spacing:-.055em}
+    .lead{font-size:clamp(1.05rem,2vw,1.3rem);line-height:1.55;max-width:690px;color:#453f36}
+    .seal{width:min(250px,100%);aspect-ratio:1;border:2px solid var(--green);border-radius:50%;display:grid;place-items:center;text-align:center;margin:auto;transform:rotate(4deg);box-shadow:inset 0 0 0 9px var(--paper),inset 0 0 0 11px var(--green);color:var(--green)}
+    .seal b{display:block;font-size:3rem;font-weight:400}.seal span{display:block;font:700 .68rem system-ui,sans-serif;letter-spacing:.18em;text-transform:uppercase}
+    nav{position:relative;padding:14px 7%;display:flex;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--line);background:#fff3}
+    nav a{color:var(--green);text-decoration:none;font:700 .78rem system-ui,sans-serif;text-transform:uppercase;letter-spacing:.09em;padding:8px 12px;border:1px solid transparent}
+    nav a:hover{border-color:var(--green)}
+    main{position:relative;padding:22px 7% 70px} section{padding:44px 0;border-bottom:1px solid var(--line)} section:last-child{border:0}
+    h2{font-size:clamp(2rem,4vw,3.4rem);line-height:1;margin:0 0 20px;font-weight:500;letter-spacing:-.035em} h3{font-size:1.35rem;margin:0 0 10px}
+    p{font-size:1.04rem;line-height:1.7}.kicker{max-width:760px;color:var(--muted);font-size:1.12rem}
+    .quote{font-size:clamp(1.55rem,3vw,2.5rem);line-height:1.25;padding:28px 0;color:var(--green);max-width:850px}
+    .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:28px}.card{border:1px solid var(--line);padding:24px;background:#fff4;box-shadow:0 8px 20px var(--shadow)}
+    .num{font:700 .75rem system-ui,sans-serif;color:var(--red);letter-spacing:.15em}.card p{margin-bottom:0;color:var(--muted)}
+    .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:30px 0;border:1px solid var(--line)}.flow div{padding:22px 16px;text-align:center;border-right:1px solid var(--line);font:700 .82rem system-ui,sans-serif;letter-spacing:.05em}.flow div:last-child{border:0}.flow small{display:block;font:400 .78rem Georgia,serif;margin-top:8px;color:var(--muted);letter-spacing:0}
+    .demo{background:#282b27;color:#f4ecd8;padding:clamp(22px,4vw,44px);box-shadow:0 18px 38px #211a1250;margin-top:28px}.demo h3{font-size:2rem;font-weight:400}.demo-note{color:#c8c0ad;font-size:.92rem}.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}.field{margin:18px 0}.field label{display:block;font:700 .73rem system-ui,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#d7c69f;margin-bottom:8px}
+    textarea,input{width:100%;border:1px solid #6f715f;background:#181b18;color:#f5ecd7;padding:14px;font:1rem/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;border-radius:0;outline:none}textarea{min-height:150px;resize:vertical}textarea:focus,input:focus{border-color:#d9bc72;box-shadow:0 0 0 2px #d9bc7230}
+    #voynichOutput{font-family:Georgia,serif;letter-spacing:.04em;color:#e9d59b}.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{border:1px solid #d6bd82;background:#d6bd82;color:#242721;padding:11px 16px;font:700 .76rem system-ui,sans-serif;text-transform:uppercase;letter-spacing:.08em;cursor:pointer}.btn.secondary{background:transparent;color:#e7d7b6}.btn:hover{filter:brightness(1.08)}.status{min-height:24px;margin-top:13px;font:600 .86rem system-ui,sans-serif;color:#a9d1bd}.status.error{color:#ef9c90}
+    table{width:100%;border-collapse:collapse;margin-top:22px}th,td{text-align:left;border-bottom:1px solid var(--line);padding:13px 10px;vertical-align:top}th{font:700 .72rem system-ui,sans-serif;text-transform:uppercase;letter-spacing:.1em;color:var(--red)}
+    code{background:#8d795b1c;padding:.15em .35em;color:#54442f}.warning{border-left:4px solid var(--gold);padding:4px 0 4px 18px;margin:25px 0;color:#51493e}
+    footer{position:relative;padding:30px 7%;border-top:1px solid var(--line);display:flex;justify-content:space-between;gap:20px;color:var(--muted);font-size:.86rem}
+    @media(max-width:760px){header{grid-template-columns:1fr}.seal{display:none}.grid,.two,.flow{grid-template-columns:1fr}.flow div{border-right:0;border-bottom:1px solid var(--line)}.flow div:last-child{border-bottom:0}h1{font-size:4rem}.page{margin:0;width:100%}}
+  </style>
+</head>
+<body>
+<article class="page">
+  <header>
+    <div><div class="eyebrow">Crazy Idea No. 001</div><h1>Voynich<br>Messenger</h1><p class="lead">A modern encrypted messenger wearing a 600-year-old undeciphered manuscript as a trench coat.</p></div>
+    <div class="seal"><div><b>VM</b><span>Private by design<br>Strange by choice</span></div></div>
+  </header>
+  <nav><a href="#idea">The idea</a><a href="#demo">Working demo</a><a href="#design">Design</a><a href="#tomorrow">Next steps</a></nav>
+  <main>
+    <section id="idea">
+      <div class="eyebrow">The premise</div><h2>Make secrecy look like history.</h2>
+      <p class="kicker">A writer types ordinary English. The browser encrypts it with a shared key, converts the encrypted data into Voynich-like words, and sends only the mysterious text. The recipient enters the same key to recover the original message.</p>
+      <div class="quote">“Anyone without the key sees a convincing page of Voynichese.”</div>
+      <div class="grid">
+        <div class="card"><div class="num">01 — ENCRYPT</div><h3>Protect the meaning</h3><p>AES-256-GCM provides real authenticated encryption. Identical messages produce different output.</p></div>
+        <div class="card"><div class="num">02 — DISGUISE</div><h3>Wear the manuscript</h3><p>Encrypted bits become tokens assembled from EVA-inspired Voynich word patterns.</p></div>
+        <div class="card"><div class="num">03 — REVEAL</div><h3>Share one secret</h3><p>The correct passphrase reverses the process. A wrong key reveals nothing useful.</p></div>
+      </div>
+      <div class="flow"><div>Plain English<small>“Meet at the bonfire.”</small></div><div>AES-GCM<small>Key-derived ciphertext</small></div><div>Voynich encoding<small>12 bits per token</small></div><div>Mysterious text<small>Copy, paste, or send</small></div></div>
+    </section>
+
+    <section id="demo">
+      <div class="eyebrow">Browser prototype</div><h2>Try the messenger.</h2>
+      <p class="kicker">Everything below happens in this browser. No server receives the message or passphrase.</p>
+      <div class="demo">
+        <h3>Compose & decipher</h3><p class="demo-note">Prototype format VM1 · PBKDF2-SHA-256 · AES-256-GCM · 250,000 iterations</p>
+        <div class="field"><label for="key">Shared passphrase</label><input id="key" type="password" autocomplete="off" placeholder="Enter a strong shared phrase"></div>
+        <div class="two">
+          <div><div class="field"><label for="plainInput">English message</label><textarea id="plainInput" placeholder="Meet me at the bonfire at nine."></textarea></div><div class="actions"><button class="btn" id="encryptBtn">Encrypt to Voynich</button><button class="btn secondary" id="sampleBtn">Use sample</button></div></div>
+          <div><div class="field"><label for="voynichOutput">Voynich message</label><textarea id="voynichOutput" spellcheck="false" placeholder="Encrypted Voynich-like words appear here"></textarea></div><div class="actions"><button class="btn" id="decryptBtn">Decrypt to English</button><button class="btn secondary" id="copyBtn">Copy text</button></div></div>
+        </div>
+        <div class="field"><label for="decodedOutput">Decoded message</label><textarea id="decodedOutput" readonly placeholder="The recovered message appears here"></textarea></div>
+        <div id="status" class="status" aria-live="polite"></div>
+      </div>
+      <div class="warning"><strong>Prototype note:</strong> The cryptography uses standard browser primitives, but this concept demo has not received an independent security audit. Do not use it yet for high-stakes secrets.</div>
+    </section>
+
+    <section id="design">
+      <div class="eyebrow">How it works</div><h2>Real encryption, theatrical encoding.</h2>
+      <table>
+        <thead><tr><th>Layer</th><th>Purpose</th><th>Current prototype</th></tr></thead>
+        <tbody>
+          <tr><td>Key derivation</td><td>Turns the shared phrase into a 256-bit key</td><td>PBKDF2 with a random 16-byte salt</td></tr>
+          <tr><td>Encryption</td><td>Protects and authenticates the message</td><td>AES-GCM with a random 12-byte nonce</td></tr>
+          <tr><td>Envelope</td><td>Carries version, salt, nonce, and ciphertext</td><td>Binary <code>VM1</code> packet</td></tr>
+          <tr><td>Voynich encoding</td><td>Turns binary into manuscript-like words</td><td>4,096 unique tokens; 12 bits per word</td></tr>
+          <tr><td>Presentation</td><td>Makes output resemble a manuscript passage</td><td>EVA-like Latin transliteration</td></tr>
+        </tbody>
+      </table>
+      <p>The visible dictionary is not the security. Even if an observer converts every Voynich token back into bytes, those bytes remain authenticated ciphertext. The shared key is what unlocks the meaning.</p>
+      <h3>Authentic mode vs. generative mode</h3>
+      <div class="grid">
+        <div class="card"><div class="num">AUTHENTIC</div><p>Use only word forms documented in manuscript transcriptions. More historically faithful, but dependent on a cleaned and licensed dataset.</p></div>
+        <div class="card"><div class="num">GENERATIVE</div><p>Construct reversible words from common EVA-style components. Larger vocabulary and simpler encoding. This demo uses this mode.</p></div>
+        <div class="card"><div class="num">STORY MODE</div><p>Let token families suggest imagined concepts—water, source, drain, body, plant—so messages resemble narrative Voynich passages.</p></div>
+      </div>
+    </section>
+
+    <section id="tomorrow">
+      <div class="eyebrow">Tomorrow's trailhead</div><h2>Where the idea goes next.</h2>
+      <div class="grid">
+        <div class="card"><div class="num">DATA</div><h3>Import real EVA words</h3><p>Build a curated dictionary from established transliterations and record each token’s folio occurrences.</p></div>
+        <div class="card"><div class="num">VISUAL</div><h3>Render true glyphs</h3><p>Add a Voynich-compatible font, parchment layouts, manuscript line wrapping, and decorative paragraph initials.</p></div>
+        <div class="card"><div class="num">PRODUCT</div><h3>Package messages</h3><p>Add QR codes, share links, expiration, contacts, device-local key storage, and an installable offline app.</p></div>
+      </div>
+      <p class="quote">The manuscript does not have to surrender its meaning before it can help us hide ours.</p>
+    </section>
+  </main>
+  <footer><span>Voynich Messenger · Concept prototype</span><span>Created July 21, 2026</span></footer>
+</article>
+<script>
+(() => {
+  'use strict';
+  const syllables=['al','ar','ol','or','ch','sh','ke','te','dy','ey','in','ai','qo','ot','sa','ra'];
+  const dictionary=[];
+  for(let a=0;a<16;a++) for(let b=0;b<16;b++) for(let c=0;c<16;c++) dictionary.push(syllables[a]+syllables[b]+syllables[c]);
+  const reverse=new Map(dictionary.map((word,index)=>[word,index]));
+  const $=id=>document.getElementById(id);
+  const status=(message,error=false)=>{ $('status').textContent=message; $('status').className='status'+(error?' error':''); };
+  const u32=n=>new Uint8Array([(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255]);
+  const readU32=(b,o=0)=>((b[o]*0x1000000)+((b[o+1]<<16)|(b[o+2]<<8)|b[o+3]))>>>0;
+  const join=(...arrays)=>{const out=new Uint8Array(arrays.reduce((n,a)=>n+a.length,0));let p=0;for(const a of arrays){out.set(a,p);p+=a.length}return out};
+  async function derive(password,salt){
+    const raw=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);
+    return crypto.subtle.deriveKey({name:'PBKDF2',hash:'SHA-256',salt,iterations:250000},raw,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  }
+  function wordsFromBytes(bytes){
+    const packet=join(u32(bytes.length),bytes); let acc=0,bits=0,out=[];
+    for(const byte of packet){acc=(acc<<8)|byte;bits+=8;while(bits>=12){bits-=12;out.push(dictionary[(acc>>>bits)&4095]);acc&=(1<<bits)-1}}
+    if(bits) out.push(dictionary[(acc<<(12-bits))&4095]);
+    return out.map((w,i)=>(i&&i%7===0?'\n':'')+w).join(' ');
+  }
+  function bytesFromWords(text){
+    const words=text.trim().split(/\s+/).filter(Boolean); if(!words.length) throw new Error('Paste a Voynich message first.');
+    let acc=0,bits=0,out=[];
+    for(const word of words){const value=reverse.get(word.toLowerCase());if(value===undefined)throw new Error('This message contains an unknown token: '+word);acc=(acc<<12)|value;bits+=12;while(bits>=8){bits-=8;out.push((acc>>>bits)&255);acc&=(1<<bits)-1}}
+    const raw=new Uint8Array(out);if(raw.length<4)throw new Error('The Voynich message is incomplete.');const len=readU32(raw);if(len>raw.length-4)throw new Error('The Voynich message was truncated.');return raw.slice(4,4+len);
+  }
+  async function encrypt(){
+    const password=$('key').value,plain=$('plainInput').value;if(!password)throw new Error('Enter a shared passphrase.');if(!plain)throw new Error('Write a message to encrypt.');
+    const salt=crypto.getRandomValues(new Uint8Array(16)),nonce=crypto.getRandomValues(new Uint8Array(12)),key=await derive(password,salt);
+    const cipher=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv:nonce},key,new TextEncoder().encode(plain)));
+    const envelope=join(new Uint8Array([86,77,49,1]),salt,nonce,cipher);$('voynichOutput').value=wordsFromBytes(envelope);$('decodedOutput').value='';status('Message encrypted. Copy the Voynich text and share it.');
+  }
+  async function decrypt(){
+    const password=$('key').value;if(!password)throw new Error('Enter the shared passphrase.');const envelope=bytesFromWords($('voynichOutput').value);
+    if(envelope.length<49||envelope[0]!==86||envelope[1]!==77||envelope[2]!==49||envelope[3]!==1)throw new Error('This is not a valid VM1 message.');
+    const salt=envelope.slice(4,20),nonce=envelope.slice(20,32),cipher=envelope.slice(32),key=await derive(password,salt);
+    try{const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:nonce},key,cipher);$('decodedOutput').value=new TextDecoder().decode(plain);status('Message authenticated and decoded.');}catch{throw new Error('Wrong passphrase, or the message has been altered.');}
+  }
+  $('encryptBtn').addEventListener('click',()=>encrypt().catch(e=>status(e.message,true)));
+  $('decryptBtn').addEventListener('click',()=>decrypt().catch(e=>status(e.message,true)));
+  $('sampleBtn').addEventListener('click',()=>{$('plainInput').value='Meet me at the bonfire at nine. Bring the strange manuscript.';$('key').value=$('key').value||'blue-fountain-47';status('Sample loaded. Press Encrypt to Voynich.');});
+  $('copyBtn').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('voynichOutput').value);status('Voynich message copied.');}catch{status('Copy was blocked. Select the text and copy it manually.',true)}});
+})();
+</script>
+</body>
+</html>

@@ -132,6 +132,7 @@
 @media (min-width: 992px) {
   .news-hero-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(2, 20.75rem);
   }
 
   .news-hero-tile-featured {
@@ -140,10 +141,14 @@
   }
 
   .news-hero-tile {
-    min-height: 12rem;
+    min-height: 0;
   }
 
   .news-hero-tile-featured {
-    min-height: 24.25rem;
+    min-height: 0;
+  }
+
+  .news-hero-loading {
+    min-height: 41.75rem;
   }
 }
